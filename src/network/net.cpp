@@ -1,5 +1,16 @@
 #include <cstring>
+#include <string>
 #include "net.hpp"
+
+void initialize_layer(Dense dense) {
+  float weights[dense.in_shape*dense.out_shape];
+  memset(weights, 0, dense.in_shape*dense.out_shape*sizeof(float));
+  dense.w = weights;
+
+  float biases[dense.out_shape];
+  memset(biases, 0, dense.out_shape*sizeof(float));
+  dense.b = biases;
+}
 
 Net::Net(int in_shapes[], int length) {
   Dense layers[length];
@@ -16,14 +27,9 @@ Net::Net(int in_shapes[], int length) {
 
 }
 
-void initialize_layer(Dense dense) {
-  float weights[dense.in_shape*dense.out_shape];
-  memset(weights, 0, dense.in_shape*dense.out_shape*sizeof(int));
-  dense.w = weights;
-
-  float biases[dense.out_shape];
-  memset(biases, 0, dense.out_shape*sizeof(int));
-  dense.b = biases;
+void Net::forward_prop(float v[]) {
+  return;
 }
+
 
 
