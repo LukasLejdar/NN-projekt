@@ -1,6 +1,10 @@
+#include <cstdio>
 #include <iostream>
+#include "network/net.hpp"
+
 
 int main() {
-    std::cout << "Hello World!";
-    return 0;
+  int in_shapes[] = {5,4,3,2,1};
+  Net net(in_shapes, 5);
+  return 0;
 }
