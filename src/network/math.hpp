@@ -1,14 +1,22 @@
 #ifndef MATH_H
 #define MATH_H
 
-// mat[y*width+x]
-// x -----
+#define HT 0;
+#define WT 1;
+
+// v[y*width+x]
+// x ----- width
 // y 1 2 3 
 // | 4 5 6 => 1 2 3 4 5 6 7 8 9 
 // | 7 8 9
-//
-// return mat[h1*w2]
-float* mulMat(float m1[], int h1, int w1, float m2[], int h2, int w2, float res[]);
-void testMulMat();
+// height
+struct Matrix {
+  int ht; //height
+  int wt; //width
+  float* v;
+};
+
+void mulMat(Matrix m1, Matrix m2, Matrix result);
+void addMat(Matrix m1, Matrix m2, Matrix result);
 
 #endif
