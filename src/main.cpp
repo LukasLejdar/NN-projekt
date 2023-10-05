@@ -1,6 +1,8 @@
+#include <bitset>
 #include <cstdio>
 #include <iostream>
 #include "network/net.hpp"
+#include <iterator>
 #include <time.h>
 #include <stdio.h>
 #include <execinfo.h>
@@ -8,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "../src/network/math.hpp"
+#include "mnist_reader.hpp"
 
 void handler(int sig) {
   void *array[10];
@@ -26,18 +29,15 @@ int main() {
   srand ( time(NULL) );
   signal(SIGSEGV, handler);   // install our handler
   signal(SIGABRT, handler);   // install our handler
+  
+  MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
 
+  for(int i = 0; i < 11; i++) {
+    training_data.read_next();
 
-  Dense* layers{new Dense[]{
-    DENSE(5, 4, RELU),
-    DENSE(4, 2, SOFTMAX),
-  }};
-
-  Net net(layers, 2);
-  float inv[] = {1,1,1,1,1};
-  Matrix input = {5, 1, inv};
-  for(int i = 0; i < 10; i++) {
-    net.train(input, 1, 0);
+    std::cout << "\n" << training_data.last_lable << "\n";
+    drawMat(training_data.last_read);
+    ;
   }
 
   return 0;

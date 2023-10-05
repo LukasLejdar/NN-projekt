@@ -12,6 +12,20 @@ void printMat(Matrix& mat) {
   }
 }
 
+static std::string grayscale=" .:-=+*#%@";
+static int GRAYSCALE_LENGTH = 10;
+
+void drawMat(Matrix &mat) {
+  for(int x = 0; x < mat.ht; x++) {
+    for(int y = 0; y < mat.wt; y++) {
+      int br = mat[x][y]*(GRAYSCALE_LENGTH-1);
+      printf("%c", grayscale.at(br));
+    }
+    std::cout << "\n";
+  }
+
+}
+
 void randomizeMat(Matrix& mat) {
   for(int i = 0; i < mat.wt*mat.ht; i++) {
     mat.v[i] = (rand() % 5 - 2) / 2.0;

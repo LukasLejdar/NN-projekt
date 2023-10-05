@@ -24,6 +24,7 @@ class Matrix {
 };
 
 void printMat(Matrix& m);
+void drawMat(Matrix& m);
 void randomizeMat(Matrix& mat);
 
 Matrix mulMat(Matrix& m1, Matrix& m2);
@@ -35,5 +36,5 @@ void mulMatATB(Matrix& m1, Matrix& m2, Matrix& result);  // save result to resul
 Matrix addMat(Matrix& m1, Matrix& m2);
 void addMat(Matrix& m1, Matrix& m2, Matrix& result); // save result to result
 
-
 #endif
+
