@@ -27,18 +27,21 @@ void handler(int sig) {
 
 int main() {
   srand ( time(NULL) );
-  signal(SIGSEGV, handler);   // install our handler
-  signal(SIGABRT, handler);   // install our handler
+  signal(SIGSEGV, handler);
+  signal(SIGABRT, handler);
   
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
+  
+  Dense layers[] = {
+    DENSE(784, 128, RELU),
+    DENSE(128, 10, SOFTMAX),
+  };
 
-  for(int i = 0; i < 11; i++) {
-    training_data.read_next();
+  Net net(layers, 2);
+  net.train_epochs(training_data, 1);
 
-    std::cout << "\n" << training_data.last_lable << "\n";
-    drawMat(training_data.last_read);
-    ;
-  }
+  MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
+  net.test(test_data, 0);
 
   return 0;
 }

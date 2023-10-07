@@ -1,6 +1,9 @@
+#include "math.hpp"
+#include "../mnist_reader.hpp"
+
+
 #ifndef NET_H
 #define NET_H
-#include "math.hpp"
 
 #define RELU 0
 #define SIGMOID 1
@@ -29,15 +32,22 @@ struct DenseCache {
 class Net {
   public:
     int layers_count;
+    float initial_learning_rate = 0.001;
+    float decay_rate = 0.5;
+    float beta1 = 0.9;
+    float beta2 = 0.999;
 
     Dense* layers;
     DenseCache* threadscache[NTHREADS]; // threadmem[thread_index][layer_index] = cache of layer
 
     Net(Dense layers[], int length);
 
-    void forward_prop(Matrix& X, int thread_i);
+    Matrix& forward_prop(Matrix& X, int thread_i);
     void backward_prop(Matrix& Y, int thread_i);
-    void train(Matrix& X, int y, int thread_i);
+    void train(Matrix& X, Matrix& y, int epoch, int thread_i);
+    void train_epochs(MnistReader& reader, int epochs);
+    void test(MnistReader& reader, int thread_i);
+    void print_layer(int i, int threadi);
 };
 
 void initialize_layer(Dense &dense);
@@ -45,6 +55,8 @@ void initialize_cache(DenseCache &cache);
 void relu(float  v[], int length);
 void sigmoid(float v[], int length);
 void softmax(float v[], int length);
+float crossEntropy(float v[], float y[], int length);
+
 
 
 

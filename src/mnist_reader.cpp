@@ -31,12 +31,16 @@ MnistReader::MnistReader(std::string image_path, std::string labels_path) : imag
     return;
   }
 
+  // read magic numbers ---------------------------
+
   int magic_number;
   image_file.read((char *)&magic_number, sizeof(magic_number));
   assert(2051 == reverseInt(magic_number));
 
   labels_file.read((char *)&magic_number, sizeof(magic_number));
   assert(2049 == reverseInt(magic_number));
+
+  // get dimentions -------------------------------
 
   image_file.read((char *)&number_of_entries, sizeof(number_of_entries));
   number_of_entries = reverseInt(number_of_entries);
@@ -46,12 +50,19 @@ MnistReader::MnistReader(std::string image_path, std::string labels_path) : imag
 
   image_file.read((char *)&width, sizeof(width));
   width = reverseInt(width);
-
-  std::cout << number_of_entries << " " << height << " " << width << "\n";
   
+  std::cout << number_of_entries << " " << height << " " << width << "\n";
+
   int number_of_labels;
   labels_file.read((char *)&number_of_labels, sizeof(number_of_labels));
   assert(number_of_entries == reverseInt(number_of_labels));
+
+  // set begining positions -----------------------
+
+  images_begin = image_file.tellg();
+  labels_beg = labels_file.tellg();
+
+  // intit Matrix ---------------------------------
 
   float* v = new float[height*width];
   memset(v, 0, height*width*sizeof(float));
@@ -68,5 +79,12 @@ Matrix& MnistReader::read_next() {
       last_read.v[i] = temp/255.0;
   }
   index++;
+  if (index == number_of_entries-1) { loop_to_beg(); }
   return last_read;
+}
+
+void MnistReader::loop_to_beg() {
+  index = 0;
+  image_file.seekg(images_begin);
+  labels_file.seekg(labels_beg);
 }
