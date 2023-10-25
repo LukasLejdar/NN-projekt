@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <bits/chrono.h>
 #include <cstdio>
 #include <iostream>
 #include <chrono>
@@ -25,7 +24,6 @@ class Timer {
       auto duration = end - start;
       double ms = duration.count() * 0.001;
       printf(message, ms);
-
     }
 
   private:
@@ -33,9 +31,23 @@ class Timer {
     std::chrono::time_point<std::chrono::high_resolution_clock> startTimePoint;
 };
 
-void benchMatMul() {
-    
+Matrix* getMulTest1() {
 
+  float* v0 = new float[500*500];
+  float* v1 = new float[500*500];
+  float* result = new float[500*500];
+  Matrix* list = new Matrix[]{{500,500,v0}, {500,500,v1}, {500,500,result}};
+  randomizeMat(list[0]);
+  randomizeMat(list[1]);
+  return list;
+}
+
+void benchMatMul() {
+    Timer timer = Timer("time in ms: %0.9f \n");
+    Matrix* list = getMulTest1();
+    for(int i = 0; i < 10; i++) {
+      mulMat(list[0], list[1], list[2]);
+    }
 }
 
 int main(void) {
