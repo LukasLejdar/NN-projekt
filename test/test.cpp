@@ -17,7 +17,8 @@ Matrix* getMulTest0() {
     4}};
   float* result = new float[2];
   Matrix* list = new Matrix[]{{2,2,v0}, {2,1,v1}, {2,1,result}, {2,1,correct}};
-  mulMat(list[0], list[1], list[2]);
+  list[2] = list[0] * list[1];
+  //mulMat(list[0], list[1], list[2]);
   return list;
 } 
 

@@ -33,12 +33,13 @@ int main() {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
   
   Dense layers[] = {
-    DENSE(784, 128, RELU),
-    DENSE(128, 10, SOFTMAX),
+    DENSE(784, 120, RELU),
+    DENSE(120, 84, RELU),
+    DENSE(84, 10, SOFTMAX),
   };
 
-  Net net(layers, 2);
-  net.train_epochs(training_data, 1);
+  Net net(layers, 3);
+  net.train_epochs(training_data, 5);
 
   MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
   net.test(test_data, 0);

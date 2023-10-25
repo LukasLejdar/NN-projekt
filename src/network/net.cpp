@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
 #include <math.h>
 #include <string>
@@ -165,40 +166,64 @@ void Net::train_epochs(MnistReader& reader, int epochs) {
   Matrix Y = {layers[layers_count-1].out_shape, 1, Yv};
   double entr_sum = 0;
   int t = 60;
+
+  DenseCache batch[layers_count];
+  for(int i = 0; i < layers_count; i++) {
+    batch[i].in_shape = layers[i].in_shape;
+    batch[i].out_shape = layers[i].out_shape;
+    initialize_cache(batch[i]);
+  }
   
   for(int e = 0; e < epochs; e++) {
     reader.loop_to_beg();
 
-    for(int i = 0; i < reader.number_of_entries; i++) {
-      reader.read_next();
-      reader.last_read.ht = reader.last_read.ht*reader.last_read.wt;
-      reader.last_read.wt = 1;
+    for(int i = 0; i < reader.number_of_entries;) {
+      for(int b = 0; b < batch_count; b++, i++) {
+        reader.read_next();
+        reader.last_read.ht = reader.last_read.ht*reader.last_read.wt;
+        reader.last_read.wt = 1;
 
-      memset(Y.v, 0, layers[layers_count-1].out_shape*sizeof(float));
-      Y.v[reader.last_lable] = 1;
+        memset(Y.v, 0, layers[layers_count-1].out_shape*sizeof(float));
+        Y.v[reader.last_lable] = 1;
 
-      train(reader.last_read, Y, t, 0);
-      entr_sum -= crossEntropy(threadscache[0][layers_count-1].a.v, Y.v, Y.ht);
+        train(reader.last_read, Y, 0);
+        entr_sum += crossEntropy(threadscache[0][layers_count-1].a.v, Y.v, Y.ht);
 
-      if(i % 1000 == 0) {
-        t++;
-        float learning_rate = initial_learning_rate * sqrt(1 - pow(beta1, t)) / (1- pow(beta2, t));
-        std::cout << "on epoch " << e << " entropy average: " << entr_sum / 1000.0 << " with learning rate: " << learning_rate << "\n";
-        entr_sum =0;
+        for(int o = 0; o < layers_count; o++) {
+          addMat(batch[o].dW, threadscache[0][o].dW, batch[o].dW);
+          addMat(batch[o].dB, threadscache[0][o].dB, batch[o].dB);
+        }
+
+        if (i % 1000 == 0) { 
+          t++; 
+          float learning_rate = initial_learning_rate * sqrt(1 - pow(beta1, t)) / (1- pow(beta2, t));
+          std::cout << "on epoch " << e << "/" << i << " batch " << batch_count << " entropy average: " << entr_sum / 1000.0 << " with learning rate: " << learning_rate << "\n";
+          entr_sum = 0;
+        }
+      }
+
+      apply_gradient(batch, t, 0);
+      for(int o = 0; o < layers_count; o++) {
+        memset(batch[o].dW.v, 0, batch[o].in_shape*batch[o].out_shape*sizeof(float));
+        memset(batch[o].dB.v, 0, batch[o].out_shape*sizeof(float));
       }
     }
   }
 }
 
-void Net::train(Matrix& X, Matrix& Y, int t, int thread_i) {
+void Net::train(Matrix& X, Matrix& Y, int thread_i) {
   forward_prop(X, thread_i);
   backward_prop(Y, thread_i);
   
+}
+
+void Net::apply_gradient(DenseCache* cache, int t, int thread_i) {
   float learning_rate = initial_learning_rate * sqrt(1 - pow(beta1, t)) / (1- pow(beta2, t));
   learning_rate = std::min<float>(0.5, learning_rate);
+
   for(int i = 0; i < layers_count; i++) {
-    addMat(layers[i].w, threadscache[thread_i][i].dW * -learning_rate, layers[i].w);
-    addMat(layers[i].b, threadscache[thread_i][i].dB * -learning_rate, layers[i].b);
+    addMat(layers[i].w, cache[i].dW * -learning_rate, layers[i].w);
+    addMat(layers[i].b, cache[i].dB * -learning_rate, layers[i].b);
   }
 
 }
@@ -207,7 +232,7 @@ void Net::backward_prop(Matrix &Y, int thread_i) {
   DenseCache* caches = threadscache[thread_i];
 
   int i = layers_count-1;
-  addMat(caches[i].a, Y*-1, caches[i].dB); //cross entropy softmax, derivation, dB = DZ 
+  addMat(caches[i].a, Y*-1, caches[i].dB); Y*-1; //cross entropy softmax, derivation, dB = DZ 
   mulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
   
   for(;i >= 1;) {
@@ -229,7 +254,7 @@ void Net::test(MnistReader& reader, int thread_i) {
   float count[out_shape*out_shape];
   memset(count, 0, out_shape*sizeof(int));
 
-  int total_correct;
+  int total_correct = 0;
 
   for(int i = 0; i < reader.number_of_entries; i++) {
     reader.read_next();

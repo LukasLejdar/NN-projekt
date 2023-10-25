@@ -36,6 +36,7 @@ class Net {
     float decay_rate = 0.5;
     float beta1 = 0.9;
     float beta2 = 0.999;
+    int batch_count = 5;
 
     Dense* layers;
     DenseCache* threadscache[NTHREADS]; // threadmem[thread_index][layer_index] = cache of layer
@@ -43,8 +44,9 @@ class Net {
     Net(Dense layers[], int length);
 
     Matrix& forward_prop(Matrix& X, int thread_i);
-    void backward_prop(Matrix& Y, int thread_i);
-    void train(Matrix& X, Matrix& y, int epoch, int thread_i);
+    void backward_prop(Matrix& Y, int ehread_i);
+    void train(Matrix& X, Matrix& y, int thread_i);
+    void apply_gradient(DenseCache* cahche, int t, int thread_i);
     void train_epochs(MnistReader& reader, int epochs);
     void test(MnistReader& reader, int thread_i);
     void print_layer(int i, int threadi);
@@ -56,8 +58,5 @@ void relu(float  v[], int length);
 void sigmoid(float v[], int length);
 void softmax(float v[], int length);
 float crossEntropy(float v[], float y[], int length);
-
-
-
 
 #endif
