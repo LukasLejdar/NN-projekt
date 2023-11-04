@@ -38,7 +38,7 @@ class Timer {
 };
 
 Matrix* getMulTest1() {
-  std::size_t size = pow(2, 8) + 16; 
+  std::size_t size = 1024; 
   float* v0 = new float[size*size];
   float* v1 = new float[size*size];
   float* result = new float[size*size];
@@ -52,22 +52,11 @@ Matrix* getMulTest1() {
 }
 
 void benchMatMul() {
-  Matrix* list = getMulTest1();
-    Timer timer = Timer("bench1 time in ms: %0.9f \n");
-    for(int i = 0; i < 1; i++) {
-      mulMat(list[0], list[1], list[2]);
-    }
-}
-
-void benchMatMul2() {
     Matrix* list = getMulTest1();
-    Timer timer = Timer("bench2 time in ms: %0.9f \n");
-    for(int i = 0; i < 1; i++) {
-      mulMat2(list[0], list[1], list[2]);
-    }
+    Timer timer = Timer("bench4 time in ms: %0.9f \n");
+    mulMat<1024, 1024, 1024>(list[0], list[1], list[2]);
 }
 
 int main(void) {
   benchMatMul();
-  benchMatMul2();
 }

@@ -48,50 +48,6 @@ Matrix& Matrix::operator*(float f) {
 
 // Multiplication -----------------------------------
 
-Matrix Matrix::operator*(Matrix& m) {
-  return mulMat(*this, m);
-}
-
-Matrix mulMat(Matrix& m1, Matrix& m2) {
-  float* v = new float[m1.wt*m2.ht];
-  Matrix result = {m1.ht, m2.wt, v};
-  mulMat(m1, m2, result);
-  return result;
-}
-
-void mulMat2(Matrix& m1, Matrix& m2, Matrix& result) {
-  assert(m1.wt == m2.ht);
-  assert(result.ht == m1.ht && result.wt == m2.wt);
-
-  float* resi = result.v;
-  float *m1i, *m2i, *_m1i, *_m2i;
-  for(m1i = m1.v; m1i < m1.v + m1.ht*m1.wt; m1i += m1.wt) {
-    for(m2i = m2.v; m2i < m2.v + m2.wt; m2i++) {
-      (*resi) = (*m1i)*(*m2i);
-      for(_m1i = m1i+1, _m2i=m2i+m2.wt; _m1i < m1i + m1.wt; _m1i++, _m2i+=m2.wt) {
-        (*resi) += (*_m1i)*(*_m2i);
-      }
-      resi++;
-    }
-  }
-}
-
-void mulMat(Matrix& m1, Matrix& m2, Matrix& result) {
-  assert(m1.wt == m2.ht);
-  assert(result.ht == m1.ht && result.wt == m2.wt);
-  
-  int resi = 0;
-  for(size_t i = 0; i < m1.ht; i ++) {
-    for(size_t j = 0; j < m2.wt; j++) {
-      result.v[resi] = m1.v[i]*m2.v[j];
-      for(size_t k = 1; k < m1.wt; k++) {
-        result.v[resi] += m1.v[i*m1.wt+k]*m2.v[j+k*m2.wt];
-      }
-      resi++;
-    }
-  }
-}
-
 void mulMatABT(Matrix& m1, Matrix& m2, Matrix& result) {
   assert(m1.wt == m2.wt);
   assert(result.ht == m1.ht && result.wt == m2.ht);

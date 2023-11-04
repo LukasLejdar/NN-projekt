@@ -7,7 +7,7 @@ _test: ./test/test.cpp
 	$(CC) $(CFLAGS) -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp 
 
 _benchmark: ./test/benchmark.cpp
-	$(CC) $(CFLAGS) -fopenmp -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
+	$(CC) $(CFLAGS) -fopenmp -O3 -march=native -ffast-math -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
 
 _net: ./src/main.cpp
 	$(CC) $(CFLAGS) -o ./build/net ./src/main.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp 
