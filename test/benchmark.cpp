@@ -57,6 +57,30 @@ void benchMatMul() {
     mulMat<1024, 1024, 1024, 8>(list[0], list[1], list[2]);
 }
 
+void benchMatMul1() {
+    Matrix* list = getMulTest1();
+    Timer timer = Timer("bench4 time in ms: %0.9f \n");
+    mulMat<1024, 1024, 1024, 16>(list[0], list[1], list[2]);
+}
+
+void benchMatMul2() {
+    Matrix* list = getMulTest1();
+    Timer timer = Timer("bench4 time in ms: %0.9f \n");
+    mulMat<1024, 1024, 1024, 32>(list[0], list[1], list[2]);
+}
+
+void benchMatMul3() {
+    Matrix* list = getMulTest1();
+    Timer timer = Timer("bench4 time in ms: %0.9f \n");
+    mulMat<1024, 1024, 1024, 64>(list[0], list[1], list[2]);
+}
+
+void benchMatMul4() {
+    Matrix* list = getMulTest1();
+    Timer timer = Timer("bench4 time in ms: %0.9f \n");
+    mulMat<1024, 1024, 1024, 128>(list[0], list[1], list[2]);
+}
+
 int main(void) {
   benchMatMul();
 }
