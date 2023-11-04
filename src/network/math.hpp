@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <math.h>
 #include <assert.h>
 #include <stdio.h>
 #ifndef MATH_H
@@ -30,18 +31,21 @@ void printMat(Matrix& m);
 void drawMat(Matrix& m);
 void randomizeMat(Matrix& mat);
 
-template<size_t ht, size_t wt, size_t in>
-inline void mulMat(Matrix& m1, Matrix& m2, Matrix& result) {
-  assert(m1.wt == m2.ht);
-  assert(result.ht == m1.ht && result.wt == m2.wt);
+template<size_t ht, size_t wt, size_t in, size_t tileSize>
+inline void mulMat(Matrix& left, Matrix& right, Matrix& result) {
+  assert(left.wt == right.ht);
+  assert(result.ht == left.ht && result.wt == right.wt);
   
-  for(size_t i = 0; i < ht; i ++) {
-    for(size_t k = 0; k < in; k++) {
-      for(size_t j = 0; j < wt; j++) {
-        result.v[i*in + j] += m1.v[i*in+k]*m2.v[j+k*wt];
+  for (size_t innerTile = 0; innerTile < in; innerTile += tileSize) {
+    for(size_t i = 0; i < ht; i ++) {
+      size_t innerTileEnd = std::min(in, innerTile + tileSize);
+
+      for(size_t k = innerTile; k < innerTileEnd; k++) {
+        for(size_t j = 0; j < wt; j++) {
+          result.v[i*in + j] += left.v[i*in+k]*right.v[j+k*wt];
+        }
       }
-    }
-  }
+    }}  
 }
 
 void mulMatABT(Matrix& m1, Matrix& m2, Matrix& result);  // save result to result
