@@ -3,11 +3,12 @@
 #include <iostream>
 #include <cstdio>
 #include <random>
+#include <omp.h>
 #include "math.hpp"
 
 void printMat(Matrix& mat) {
-  for(int x = 0; x < mat.ht; x++) {
-    for(int y = 0; y < mat.wt; y++) {
+  for(size_t x = 0; x < mat.ht; x++) {
+    for(size_t y = 0; y < mat.wt; y++) {
       printf("%6.4lf ", mat[x][y]);
     }
     std::cout << "\n";
@@ -18,9 +19,9 @@ static std::string grayscale=" .:-=+*#%@";
 static int GRAYSCALE_LENGTH = 10;
 
 void drawMat(Matrix &mat) {
-  for(int x = 0; x < mat.ht; x++) {
-    for(int y = 0; y < mat.wt; y++) {
-      int br = mat[x][y]*(GRAYSCALE_LENGTH-1);
+  for(size_t x = 0; x < mat.ht; x++) {
+    for(size_t y = 0; y < mat.wt; y++) {
+      size_t br = mat[x][y]*(GRAYSCALE_LENGTH-1);
       printf("%c", grayscale.at(br));
     }
     std::cout << "\n";
@@ -32,14 +33,14 @@ void randomizeMat(Matrix& mat) {
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0, 1.0 / mat.ht);
 
-  for(int i = 0; i < mat.wt*mat.ht; i++) {
+  for(size_t i = 0; i < mat.wt*mat.ht; i++) {
     mat.v[i] = distribution(generator);
   }
 }
 
 
 Matrix& Matrix::operator*(float f) {
-  for(int i = 0; i < ht*wt; i++) {
+  for(size_t i = 0; i < ht*wt; i++) {
     v[i] = v[i]*f;
   }
   return *this;
@@ -58,16 +59,33 @@ Matrix mulMat(Matrix& m1, Matrix& m2) {
   return result;
 }
 
-void mulMat(Matrix& m1, Matrix& m2, Matrix& result) {
+void mulMat2(Matrix& m1, Matrix& m2, Matrix& result) {
   assert(m1.wt == m2.ht);
   assert(result.ht == m1.ht && result.wt == m2.wt);
 
   float* resi = result.v;
-  for(float* m1i = m1.v; m1i < m1.v + m1.ht*m1.wt; m1i += m1.wt) {
-    for(float* m2i = m2.v; m2i < m2.v + m2.wt; m2i++) {
+  float *m1i, *m2i, *_m1i, *_m2i;
+  for(m1i = m1.v; m1i < m1.v + m1.ht*m1.wt; m1i += m1.wt) {
+    for(m2i = m2.v; m2i < m2.v + m2.wt; m2i++) {
       (*resi) = (*m1i)*(*m2i);
-      for(float *_m1i = m1i+1, *_m2i=m2i+m2.wt; _m1i < m1i + m1.wt; _m1i++, _m2i+=m2.wt) {
+      for(_m1i = m1i+1, _m2i=m2i+m2.wt; _m1i < m1i + m1.wt; _m1i++, _m2i+=m2.wt) {
         (*resi) += (*_m1i)*(*_m2i);
+      }
+      resi++;
+    }
+  }
+}
+
+void mulMat(Matrix& m1, Matrix& m2, Matrix& result) {
+  assert(m1.wt == m2.ht);
+  assert(result.ht == m1.ht && result.wt == m2.wt);
+  
+  int resi = 0;
+  for(size_t i = 0; i < m1.ht; i ++) {
+    for(size_t j = 0; j < m2.wt; j++) {
+      result.v[resi] = m1.v[i]*m2.v[j];
+      for(size_t k = 1; k < m1.wt; k++) {
+        result.v[resi] += m1.v[i*m1.wt+k]*m2.v[j+k*m2.wt];
       }
       resi++;
     }

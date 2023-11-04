@@ -1,4 +1,7 @@
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include <cstdio>
 #include <iostream>
 #include <chrono>
@@ -7,8 +10,11 @@
 
 class Timer {
   public:
-    Timer(char* message) {
-      this->message = message;
+    Timer(std::string message) {
+      const int length = message.length(); 
+      this->message = new char[length + 1]; 
+      strcpy(this->message, message.c_str());
+
       startTimePoint = std::chrono::high_resolution_clock::now();
     }
     
@@ -32,24 +38,36 @@ class Timer {
 };
 
 Matrix* getMulTest1() {
-
-  float* v0 = new float[500*500];
-  float* v1 = new float[500*500];
-  float* result = new float[500*500];
-  Matrix* list = new Matrix[]{{500,500,v0}, {500,500,v1}, {500,500,result}};
+  std::size_t size = pow(2, 8) + 16; 
+  float* v0 = new float[size*size];
+  float* v1 = new float[size*size];
+  float* result = new float[size*size];
+  Matrix* list = new Matrix[]{
+      {size, size, v0}, 
+      {size, size, v1}, 
+      {size, size, result}};
   randomizeMat(list[0]);
   randomizeMat(list[1]);
   return list;
 }
 
 void benchMatMul() {
-    Timer timer = Timer("time in ms: %0.9f \n");
-    Matrix* list = getMulTest1();
-    for(int i = 0; i < 10; i++) {
+  Matrix* list = getMulTest1();
+    Timer timer = Timer("bench1 time in ms: %0.9f \n");
+    for(int i = 0; i < 1; i++) {
       mulMat(list[0], list[1], list[2]);
+    }
+}
+
+void benchMatMul2() {
+    Matrix* list = getMulTest1();
+    Timer timer = Timer("bench2 time in ms: %0.9f \n");
+    for(int i = 0; i < 1; i++) {
+      mulMat2(list[0], list[1], list[2]);
     }
 }
 
 int main(void) {
   benchMatMul();
+  benchMatMul2();
 }

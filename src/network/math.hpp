@@ -1,3 +1,5 @@
+#include <cstddef>
+#include <stdio.h>
 #ifndef MATH_H
 #define MATH_H
 
@@ -10,8 +12,8 @@
 /// height
 class Matrix {
   public:
-    int ht; //height
-    int wt; //width
+    std::size_t ht; //height
+    std::size_t wt; //width
     float* v;
 
     float* operator[](int p) { return &(v[p*wt]); }
@@ -29,6 +31,7 @@ void randomizeMat(Matrix& mat);
 
 Matrix mulMat(Matrix& m1, Matrix& m2);
 void mulMat(Matrix& m1, Matrix& m2, Matrix& result);  // save result to result
+void mulMat2(Matrix& m1, Matrix& m2, Matrix& result);  // save result to result
 
 void mulMatABT(Matrix& m1, Matrix& m2, Matrix& result);  // save result to result
 void mulMatATB(Matrix& m1, Matrix& m2, Matrix& result);  // save result to result
