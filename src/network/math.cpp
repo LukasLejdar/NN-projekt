@@ -38,20 +38,3 @@ void randomizeMat(Matrix& mat) {
   }
 }
 
-
-Matrix addMat(Matrix& m1, Matrix& m2) {
-  float* v = new float[m1.wt*m1.ht];
-  Matrix result = {m1.ht, m1.wt, v};
-  addMat(m1, m2, result);
-  return result;
-}
-
-void addMat(Matrix& m1, Matrix& m2, Matrix& result) {
-  assert(m1.ht == m2.ht && m2.ht == result.ht && m1.wt == m2.wt && m2.wt == result.wt);
-
-  float *m1i = m1.v, *m2i = m2.v, *resi = result.v;
-  for(; m1i < m1.v + m1.wt*m1.ht; m1i++, m2i++, resi++) {
-    (*resi) = (*m1i) + (*m2i);
-  }
-}
-

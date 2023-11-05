@@ -192,22 +192,21 @@ Matrix* getMulTest1ATB() {
 }
 
 Matrix* getAddTest() {
+  float* v = {new float[]{0}};
   float* v0 = {new float[]{ 
-    0, 2, 3, 
-    0 ,0, 0,
-    1, 2, 4}};
-  float* v1 = {new float[]{ 
     1, 2, 2,
     0 ,3, 4, 
     2, 1, 5}};
+  float* result = {new float[]{ 
+    0, 2, 3, 
+    0 ,0, 0,
+    1, 2, 4}};
   float* correct = {new float[]{
     1, 4, 5,
     0, 3, 4,
     3, 3, 9}};
-  float* result = new float[9];
-  std::fill(result, result+9, 0);
-  Matrix * list = new Matrix[]{{3,3,result}, {3,3,correct}, {3,3,v0}, {3,3,v1}};
-  addMat(list[2], list[3], list[0]);
+  Matrix * list = new Matrix[]{{3,3,result}, {3,3,correct}, {3,3,v0}, {1,1,v}};
+  addMat<3,3,8>(list[2], list[0]);
   return list;
 }
 

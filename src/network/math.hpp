@@ -44,24 +44,6 @@ inline void addMulMat(Matrix& left, Matrix& right, Matrix& result) {
   }  
 }
 
-/// result = left*right^T + result
-//template<size_t ht, size_t in, size_t ht2, size_t tileSize>
-//inline void addMulMatABT(Matrix& left, Matrix& right, Matrix& result) {
-//  assert(left.wt == right.wt && right.wt == in);
-//  assert(result.ht == left.ht && left.ht == ht && result.wt == right.ht && right.ht == ht2);
-//  
-//  for (size_t htTile = 0; htTile < ht2; htTile += tileSize) {
-//    size_t htTileEnd = std::min(in, htTile + tileSize);
-//    for(size_t i = htTile; i < htTileEnd; i++) {
-//      for(size_t j = 0; j < ht2; j++) {
-//        for(size_t k = 0; k < in; k++) {
-//          result.v[i*ht2+j] += left.v[i*in+k]*right.v[j*in+k];
-//        }
-//      }
-//    }
-//  }
-//}
-
 template<size_t ht, size_t wt, size_t tileSize>
 inline void transpose(Matrix& a, Matrix& result) {
   assert(a.wt == wt && a.ht == ht);
@@ -98,8 +80,21 @@ inline void addMulMatATB(Matrix& left, Matrix& right, Matrix& result) {
   }
 }
 
-Matrix addMat(Matrix& m1, Matrix& m2);
-void addMat(Matrix& m1, Matrix& m2, Matrix& result); // save result to result
+template<size_t ht, size_t wt, size_t tileSize>
+inline void addMat(Matrix& m, Matrix& result) {
+  assert(m.ht == ht && m.wt == wt);
+  assert(result.ht == ht && result.wt == wt);
+
+  for (size_t htTile = 0; htTile < ht; htTile += tileSize) {
+    for(size_t j = 0; j < wt; j++) {
+      size_t htTileEnd = std::min(ht, htTile + tileSize);
+
+      for(size_t i = htTile; i < htTileEnd; i++) {
+        result.v[i*wt+j] += m.v[i*wt+j];
+      }
+    }
+  }
+}
 
 #endif
 

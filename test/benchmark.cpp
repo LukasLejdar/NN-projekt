@@ -69,64 +69,71 @@ Matrix* getMulTest2() {
 
 void benchMatMul() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 8 time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMul 8 time in ms: %0.3f \n");
   addMulMat<1024,1024,1024,8>(list[0], list[1], list[2]);
 }
 
 void benchMatMul1() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 16 time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMul 16 time in ms: %0.3f \n");
   addMulMat<1024,1024,1024,16>(list[0], list[1], list[2]);
 }
 
 void benchMatMul2() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 32 time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMul 32 time in ms: %0.3f \n");
   addMulMat<1024,1024,1024,32>(list[0], list[1], list[2]);
 }
 
 void benchMatMul3() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 64 time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMul 64 time in ms: %0.3f \n");
   addMulMat<1024,1024,1024,64>(list[0], list[1], list[2]);
 }
 
 void benchMatMul4() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 128 time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMul 128 time in ms: %0.3f \n");
   addMulMat<1024,1024,1024,128>(list[0], list[1], list[2]);
 }
 
 void benchMatMulABT() {
     Matrix* list = getMulTest1();
-    Timer timer = Timer("bench matMulABT time in ms: %0.9f \n");
+    Timer timer = Timer("bench matMulABT time in ms: %0.3f \n");
     transpose<1024,1024,8>(list[2], list[1]);
     addMulMat<1024,1024,1024,8>(list[0], list[1], list[2]);
 }
 
 void benchMatMulATB() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMulATB time in ms: %0.9f \n");
+  Timer timer = Timer("bench matMulATB time in ms: %0.3f \n");
   addMulMatATB<1024,1024,1024,8>(list[0], list[1], list[2]);
 }
 
 void benchTranspose0() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench tranpose square matrix time in ms: %0.9f \n");
+  Timer timer = Timer("bench transpose square matrix time in ms: %0.3f \n");
   transpose<1024,1024,8>(list[0], list[2]);
 }
 
 void benchTranspose1() {
   Matrix* list = getMulTest2();
-  Timer timer = Timer("bench tranpose rectangular matrix wider time in ms: %0.9f \n");
+  Timer timer = Timer("bench transpose rectangular matrix wider time in ms: %0.3f \n");
   transpose<512,2048,8>(list[0], list[2]);
 }
 
 void benchTranspose2() {
   Matrix* list = getMulTest2();
-  Timer timer = Timer("bench tranpose rectangular matrix taller time in ms: %0.9f \n");
+  Timer timer = Timer("bench transpose rectangular matrix taller time in ms: %0.3f \n");
   transpose<2048,512,8>(list[1], list[0]);
 }
+
+void benchAddMat() {
+  Matrix* list = getMulTest1();
+  Timer timer = Timer("bench add matricies time in ms: %0.3f \n");
+  addMat<1024,1024,8>(list[1], list[0]);
+}
+
 
 int main(void) {
   std::cout << "find optimal tailing\n";
@@ -137,9 +144,14 @@ int main(void) {
   benchMatMul4();
 
   std::cout << "\n";
+  benchMatMulABT();
+  benchMatMulATB();
+
+  std::cout << "\n";
   benchTranspose0();
   benchTranspose1();
   benchTranspose2();
-  benchMatMulABT();
-  benchMatMulATB();
+
+  std::cout << "\n";
+  benchAddMat();
 }
