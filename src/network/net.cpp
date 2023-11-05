@@ -233,7 +233,7 @@ void Net::backward_prop(Matrix &Y, int thread_i) {
 
   int i = layers_count-1;
   addMat(caches[i].a, Y*-1, caches[i].dB); Y*-1; //cross entropy softmax, derivation, dB = DZ 
-  mulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
+  addMulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
   
   for(;i >= 1;) {
     float vdA[caches[i].a_prev->ht];
@@ -241,7 +241,7 @@ void Net::backward_prop(Matrix &Y, int thread_i) {
     mulMatATB(layers[i].w, caches[i].dB, dA_prev);
     i--;
     layers[i].back_activation(vdA, caches[i].a.v, caches[i].a.ht, caches[i].dB.v); // dB = dZ
-    mulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
+    addMulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
   }
 }
 
