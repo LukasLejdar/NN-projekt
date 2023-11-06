@@ -1,7 +1,6 @@
 #include "math.hpp"
 #include "../mnist_reader.hpp"
 
-
 #ifndef NET_H
 #define NET_H
 
@@ -10,23 +9,19 @@
 #define SOFTMAX 2
 #define NTHREADS 10
 
-#define DENSE(in, out, activ) {in, out, activ, nullptr, nullptr, {}, {}}
+#define DENSE(in, out) {in, out, {}, {}}
 
 struct Dense {
   int in_shape; int out_shape;
-  int acti;
-  void (*activation) (float v[], int length);
-  void (*back_activation) (float dA[], float A[], int length, float dZ[]); //save result to dZ
   Matrix w;
   Matrix b;
-};
-
-struct DenseCache {
-  int in_shape, out_shape;
-  Matrix* a_prev; //activations
-  Matrix a; 
   Matrix dW;
   Matrix dB;
+
+};
+
+struct ThreadsCache {
+  Matrix a; 
 };
 
 class Net {
@@ -39,21 +34,20 @@ class Net {
     int batch_count = 5;
 
     Dense* layers;
-    DenseCache* threadscache[NTHREADS]; // threadmem[thread_index][layer_index] = cache of layer
+    ThreadsCache* threadscache[NTHREADS];
 
-    Net(Dense layers[], int length);
+    Net(Dense layers[]);
 
-    Matrix& forward_prop(Matrix& X, int thread_i);
-    void backward_prop(Matrix& Y, int ehread_i);
-    void train(Matrix& X, Matrix& y, int thread_i);
-    void apply_gradient(DenseCache* cahche, int t, int thread_i);
+    Matrix& forward_prop(Matrix& X, ThreadsCache* cache);
+    void backward_prop(Matrix& Y, ThreadsCache* cache);
+    void train(Matrix& X, Matrix& y, ThreadsCache* cache);
     void train_epochs(MnistReader& reader, int epochs);
-    void test(MnistReader& reader, int thread_i);
-    void print_layer(int i, int threadi);
+    void test(MnistReader& reader, ThreadsCache* cache);
+    void print_layer(int i, ThreadsCache* cache);
 };
 
 void initialize_layer(Dense &dense);
-void initialize_cache(DenseCache &cache);
+void initialize_cache(ThreadsCache &cache);
 void relu(float  v[], int length);
 void sigmoid(float v[], int length);
 void softmax(float v[], int length);
