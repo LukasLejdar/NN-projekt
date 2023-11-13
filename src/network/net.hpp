@@ -1,5 +1,6 @@
 #include "math.hpp"
 #include "../mnist_reader.hpp"
+#include <array>
 
 #ifndef NET_H
 #define NET_H
@@ -7,47 +8,64 @@
 #define RELU 0
 #define SIGMOID 1
 #define SOFTMAX 2
-#define NTHREADS 10
-
-#define DENSE(in, out) {in, out, {}, {}}
+#define NTHREADS 6
 
 struct Dense {
-  int in_shape; int out_shape;
+  size_t in_shape, out_shape;
   Matrix w;
   Matrix b;
-  Matrix dW;
-  Matrix dB;
 
+  Dense(): in_shape(0), out_shape(0), w({}), b({}) {}
+  Dense(const Dense& other);
+  Dense(size_t in_shape, size_t out_shape);
+  void swap(Dense& other);
+  Dense& operator=(const Dense& other);
 };
 
-struct ThreadsCache {
-  Matrix a; 
+struct Cache {
+  Matrix* a; //activations a[-1] is duplicate of trained sample 
+  Matrix* dB; 
+  Matrix* dW;
+  Matrix Y;
+
+  ~Cache() {
+    delete [] (a-1);
+    delete [] dB; 
+    delete [] dW;
+  };
 };
 
 class Net {
   public:
-    int layers_count;
-    float initial_learning_rate = 0.001;
-    float decay_rate = 0.5;
-    float beta1 = 0.9;
-    float beta2 = 0.999;
-    int batch_count = 5;
+    size_t layers_count;
+    float learning_rate = 0.001;
 
-    Dense* layers;
-    ThreadsCache* threadscache[NTHREADS];
+    Net(Dense layers[], size_t length);
 
-    Net(Dense layers[]);
+    ~Net() { delete [] layers; }
 
-    Matrix& forward_prop(Matrix& X, ThreadsCache* cache);
-    void backward_prop(Matrix& Y, ThreadsCache* cache);
-    void train(Matrix& X, Matrix& y, ThreadsCache* cache);
+    static void func();
+    Matrix& forward_prop(Cache& cache);
     void train_epochs(MnistReader& reader, int epochs);
-    void test(MnistReader& reader, ThreadsCache* cache);
-    void print_layer(int i, ThreadsCache* cache);
+    void test(MnistReader& reader);
+    void print_layer(size_t i, Cache& cache);
+    void print_layer(size_t i, size_t t);
+    float train_sample(Matrix &X, Matrix&Y) {
+      copyMatricesOfSameSize(X, threadscache[0].a[-1]);
+      copyMatricesOfSameSize(Y, threadscache[0].Y);
+      train(&threadscache[0]);
+      return apply_gradient(threadscache[0]);
+    }
+
+  private:
+    Dense* layers;
+    Cache threadscache[NTHREADS];
+
+    void train(Cache* cache);
+    float apply_gradient(Cache& cache);
+    void back_prop(Cache& cache);
 };
 
-void initialize_layer(Dense &dense);
-void initialize_cache(ThreadsCache &cache);
 void relu(float  v[], int length);
 void sigmoid(float v[], int length);
 void softmax(float v[], int length);

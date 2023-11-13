@@ -64,9 +64,7 @@ MnistReader::MnistReader(std::string image_path, std::string labels_path) : imag
 
   // intit Matrix ---------------------------------
 
-  float* v = new float[height*width];
-  memset(v, 0, height*width*sizeof(float));
-  last_read = {height, width, v};
+  last_read = {static_cast<size_t>(height), static_cast<size_t>(width)};
 }
 
 Matrix& MnistReader::read_next() {
@@ -79,7 +77,7 @@ Matrix& MnistReader::read_next() {
       last_read.v[i] = temp/255.0;
   }
   index++;
-  if (index == number_of_entries-1) { loop_to_beg(); }
+  if (index == number_of_entries) { loop_to_beg(); }
   return last_read;
 }
 

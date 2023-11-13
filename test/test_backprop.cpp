@@ -4,20 +4,22 @@
 #include "../src/network/math.hpp"
 #include "../src/network/net.hpp"
 
-void test_back_prop() {
-  Dense layers[] = {
-    DENSE(3, 3, RELU),
-    DENSE(3, 2, SOFTMAX),
+int main(void) {
+  MnistReader test_data("mnist/test-images-idx3-ubyte", "mnist/test-labels-idx1-ubyte");
+  std::cout << test_data.number_of_entries << "\n";
+  std::cout << test_data.last_read.ht << "\n";
+  test_data.number_of_entries = 1;
+
+
+  const size_t LENGTH = 2;
+  Dense layers[LENGTH] = {
+    {81,4},
+    {4,2}
   };
 
-  Net net(layers, 2);
-
-  float v[] = {0, 0, 1};
-  Matrix inp = {3, 1, v};
-}
-
-int main(void) {
-  test_back_prop();
+  Net net(layers, LENGTH);
+  net.train_epochs(test_data, 2);
+ 
   return 0;
 }
 

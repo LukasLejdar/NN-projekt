@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <list>
 #include <thread>
 #include <chrono>
 #include <omp.h>
@@ -16,39 +18,65 @@
 //    printMat(input[n+1]);
 //  }
 //}
+//
+
+struct Test {
+  void execute_on_thread(Matrix* m, Matrix* result, int thread_i) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10*thread_i));
+    addMat<8>(*m, *result);
+    addMat<8>(*m, *result);
+    addMat<8>(*m, *result);
+    addMat<8>(*m, *result);
+  }
+};
 
 void omp() {
-  float* v0 = {new float[]{ 
-    1, 0, 0, 
-    0 ,0, 0, 
-    0, 0, 0}};
-  float* v1 = {new float[]{ 
-    0, 2, 0, 
-    0 ,0, 0, 
-    0, 0, 0}};
-  float* v2 = {new float[]{ 
-    0, 0, 3, 
-    0 ,0, 0, 
-    0, 0, 0}};
-  float* v3 = {new float[]{ 
-    0, 0, 0, 
-    4 ,0, 0, 
-    0, 0, 0}};
-  Matrix matrices[] = {{3,3,v0}, {3,3,v1}, {3,3,v2}, {3,3,v3}};
+  const int n_threads = 4;
+  size_t wt = 16000;
+  size_t ht = 16000;
+  Matrix list[n_threads] = {};
 
-  float* r = {new float[]{ 
-    0, 0, 0, 
-    0 ,0, 0, 
-    0, 0, 0}};
-  Matrix result = {3,3,r};
-
-  #pragma omp parallel for
-  for(int i = 0; i < 4; i++) {
-    std::this_thread::sleep_for(std::chrono::microseconds(i));
-    addMat<3,3,8>(matrices[i], result);
-    std::cout << omp_get_thread_num() << "\n";
+  for(size_t i = 0; i < n_threads; i++) {
+    list[i] = Matrix(ht, wt);
+    randomizeMat(list[i]);
   }
-  printMat(result);
+
+  Matrix result = Matrix(ht, wt);
+  Matrix control = Matrix(ht, wt);
+
+  zeroMat(result);
+  zeroMat(control);
+
+  std::cout << "begin\n";
+
+  std::thread threads[n_threads];
+  for(int i = 0; i < n_threads; i++) {
+
+    threads[i] = std::thread(execute_on_thread, &(list[i]), &result, i);
+  }
+
+  for (auto& th : threads) 
+    th.join();
+
+  std::cout << "done\n";
+
+  for(int i = 0; i < n_threads; i++) {
+    addMat<8>(list[i], control);
+    addMat<8>(list[i], control);
+    addMat<8>(list[i], control);
+    addMat<8>(list[i], control);
+  }
+
+  size_t count = 0;
+  for(size_t x = 0; x < control.ht; x++) {
+    for(size_t y = 0; y < control.wt; y++) {
+      if(control[x][y] != result[x][y]) {
+        count++;
+      }
+    }
+  }
+
+  std::cout << count << "\n";
 
 }
 

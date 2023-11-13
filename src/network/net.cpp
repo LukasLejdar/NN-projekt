@@ -1,53 +1,81 @@
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
 #include <filesystem>
 #include <iterator>
 #include <math.h>
+#include <sched.h>
 #include <string>
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
 #include <bits/stdc++.h>
+#include <thread>
 #include "net.hpp"
 #include "math.hpp"
 #include "../mnist_reader.hpp"
 
+Dense::Dense(const Dense& other): in_shape(other.in_shape), out_shape(other.out_shape) {
+  w = other.w;
+  b = other.b;
+}
+
+Dense::Dense(size_t in_shape, size_t out_shape): 
+  in_shape(in_shape), 
+  out_shape(out_shape),
+  w(Matrix(out_shape, in_shape)),
+  b(Matrix(out_shape, 1)) {}
+
+void Dense::swap(Dense& other) {
+    std::swap(in_shape, other.in_shape);
+    std::swap(out_shape, other.out_shape);
+    w.swap(other.w);
+    b.swap(other.b);
+  }
+
+Dense& Dense::operator=(const Dense& other) {
+  Dense temp(other);
+  swap(temp);
+  return *this;
+}
+
 // activations --------------------------------------
 
-void relu(float v[], int length) {
-  for(int i = 0; i < length; i++) {
+void relu(float v[], size_t length) {
+  for(size_t i = 0; i < length; i++) {
     v[i]=std::max<float>(0.0, v[i]);
   }
 }
 
-void relu_backward(float dA[], float A[], int length, float dZ[]) {
-  for(int i = 0; i < length; i++) {
-    dZ[i] = (A[i] > 0) * dA[i];
+void relu_backward(float dA[], float A[], size_t length) {
+  for(size_t i = 0; i < length; i++) {
+    dA[i] = (A[i] > 0) * dA[i];
   }
 }
 
-void sigmoid(float v[], int length) {
-  for(int i = 0; i < length; i++) {
+void sigmoid(float v[], size_t length) {
+  for(size_t i = 0; i < length; i++) {
     v[i] = 1 / (1 + exp(-v[i]));
   }
 }
 
-void softmax(float v[], int length) {
+void softmax(float v[], size_t length) {
   float sum = 0;
-  for(int i = 0; i < length; i++) {
+  for(size_t i = 0; i < length; i++) {
     v[i] = exp(v[i]);
     sum += v[i];
   }
-  for(int i = 0; i < length; i++) {
+  for(size_t i = 0; i < length; i++) {
     v[i] = v[i] / sum;
   }
 }
 
-float crossEntropy(float *v, float *y, int length) {
+float crossEntropy(float *v, float *y, size_t length) {
   float sum = 0;
-  for(int i = 0; i < length; i++) {
+  for(size_t i = 0; i < length; i++) {
     sum -= y[i]*log(v[i]);
   }
   return sum;
@@ -55,8 +83,11 @@ float crossEntropy(float *v, float *y, int length) {
 
 // Net ----------------------------------------------
 
-void Net::print_layer(int i, int thread_i) {
-    DenseCache* caches = threadscache[thread_i];
+void Net::print_layer(size_t i, size_t t) {
+  print_layer(i, threadscache[t]);
+}
+
+void Net::print_layer(size_t i, Cache& cache) {
     std::cout << "\nweights\n";
     printMat(layers[i].w);
 
@@ -64,195 +95,123 @@ void Net::print_layer(int i, int thread_i) {
     printMat(layers[i].b);
 
     std::cout << "\nact\n";
-    printMat(caches[i].a);
+    printMat(cache.a[i]);
 
     std::cout << "\ndWeights\n";
-    printMat(caches[i].dW);
+    printMat(cache.dW[i]);
 
     std::cout << "\ndBiases\n";
-    printMat(caches[i].dB);
+    printMat(cache.dB[i]);
+
+    std::cout << "\n";
 }
 
-void initialize_layer(Dense &dense) {
-  float *weights = new float[dense.in_shape*dense.out_shape];
-  float *biases = new float[dense.out_shape];
-
-  dense.w.v = weights; 
-  dense.w.ht = dense.out_shape; 
-  dense.w.wt = dense.in_shape;
-
-  dense.b.v = biases; 
-  dense.b.ht = dense.out_shape; 
-  dense.b.wt = 1;
-
-  randomizeMat(dense.w);
-  memset(dense.b.v, 0, dense.b.ht*sizeof(float));
-
-  switch (dense.acti) {
-    case RELU: 
-      dense.activation = relu; 
-      dense.back_activation = relu_backward;
-      break;
-    case SIGMOID: dense.activation = sigmoid; break;
-    case SOFTMAX: dense.activation = softmax; break;
-    default: dense.activation = relu; break;
-  }
-}
-
-void initialize_cache(DenseCache &cache) {
-  float *dWeights = new float[cache.in_shape*cache.out_shape];
-  float *dBiases = new float[cache.out_shape];
-  float *activations = new float[cache.out_shape];
-
-  memset(dWeights, 0, cache.in_shape*cache.out_shape*sizeof(float));
-  memset(dBiases, 0, cache.out_shape*sizeof(float));
-  memset(activations, 0,cache.out_shape*sizeof(float));
-
-  cache.dW.v = dWeights; 
-  cache.dW.ht = cache.out_shape; 
-  cache.dW.wt = cache.in_shape;
-
-  cache.dB.v = dBiases; 
-  cache.dB.ht = cache.out_shape; 
-  cache.dB.wt = 1;
-
-  cache.a.v = activations;
-  cache.a.ht = cache.out_shape;
-  cache.a.wt = 1;
-}
-
-Net::Net(Dense layers[], int length) {
+Net::Net(Dense _layers[], size_t length) {
   layers_count = length;
-  this->layers = layers;
+  layers = new Dense[length];
+  std::copy(_layers, _layers+length, layers);
 
-  assert(layers[length-1].acti == SOFTMAX);
+  for(size_t t = 0; t < NTHREADS; t++) {
+    threadscache[t].dB = new Matrix[length];
+    threadscache[t].dW = new Matrix[length];
+    threadscache[t].a = new Matrix[length+1] + 1; // leave space for input
+    threadscache[t].a[-1] = Matrix(layers[0].in_shape, 1);
+    threadscache[t].Y = Matrix(layers[layers_count-1].out_shape, 1);
 
-  for(int i = 0; i < NTHREADS; i++) {
-    DenseCache* cache{new DenseCache[length]};
-    threadscache[i] = cache;
-  }
-
-  for(int i = 0; i < length; i++) {
-    initialize_layer(layers[i]);
-    for(int t = 0; t < NTHREADS; t++) {
-      threadscache[t][i].in_shape = layers[i].in_shape;
-      threadscache[t][i].out_shape = layers[i].out_shape;
-      initialize_cache(threadscache[t][i]);
+    // << "initialized cache arrays\n";
+    for(size_t i = 0; i < length; i++) {
+      threadscache[t].a[i] = Matrix(layers[i].out_shape, 1);
+      threadscache[t].dB[i] = Matrix(layers[i].out_shape, 1);
+      threadscache[t].dW[i] = Matrix(layers[i].out_shape, layers[i].in_shape);
     }
   }
 
-  for(int i = 1; i < length; i++) {
-    for(int t = 0; t < NTHREADS; t++) {
-      threadscache[t][i].a_prev = &(threadscache[t][i-1].a);
-    }
+  // << "before randomize\n";
+  for(size_t i = 0; i < length; i++) {
+    randomizeMat(layers[i].w);
+    auto [mean, varience] = getVarAndExp(layers[i].w);
+    std::cout << "layer " << i << " weights mean " << mean << "\n";
+    std::cout << "layer " << i << " weights varience " << varience << " expected " << 1.0 / layers[i].w.wt << "\n";
   }
 }
 
-Matrix& Net::forward_prop(Matrix& X, int thread_i) {
-  DenseCache* caches = threadscache[thread_i]; // activations
-  caches[0].a_prev = &X;
-  
-  for(int i = 0; i < layers_count; i++) {
-    mulMat(layers[i].w, *(caches[i].a_prev), caches[i].a);
-    addMat(layers[i].b, caches[i].a, caches[i].a);
-    layers[i].activation(caches[i].a.v, caches[i].a.ht);
+//TODO: benchmark forwad_prop
+Matrix& Net::forward_prop(Cache& cache) {
+  for(size_t i = 0; i < layers_count; i++) {
+    matMul<8>(layers[i].w, cache.a[i-1], cache.a[i]);
+    addMat<8>(layers[i].b, cache.a[i]);
+    
+    if(i == layers_count-1) { softmax(cache.a[i].v, cache.a[i].ht); }
+    else { relu(cache.a[i].v, cache.a[i].ht); }
   }
 
-  return caches[layers_count - 1].a;
+  return cache.a[layers_count - 1];
+}
+
+//TODO: benchmark backward_prop
+void Net::back_prop(Cache& cache) {
+  int i = layers_count-1;
+  addMat<8, 1, -1>(cache.a[i], cache.Y, cache.dB[i]);
+  mulMatAvT<8>(cache.dB[i], cache.a[i-1], cache.dW[i]);
+  
+  for(;i > 0;) {
+    matMulATB<8>(layers[i].w, cache.dB[i], cache.dB[i-1]);
+    i--;
+    relu_backward(cache.dB[i].v, cache.a[i].v, cache.a[i].ht);
+    mulMatAvT<8>(cache.dB[i], cache.a[i-1], cache.dW[i]);
+  }
+}
+
+void Net::train(Cache* cache) {
+  forward_prop(*cache);
+  back_prop(*cache);
 }
 
 void Net::train_epochs(MnistReader& reader, int epochs) {
-  float Yv[layers[layers_count-1].out_shape];
-  Matrix Y = {layers[layers_count-1].out_shape, 1, Yv};
-  double entr_sum = 0;
-  int t = 60;
-
-  DenseCache batch[layers_count];
-  for(int i = 0; i < layers_count; i++) {
-    batch[i].in_shape = layers[i].in_shape;
-    batch[i].out_shape = layers[i].out_shape;
-    initialize_cache(batch[i]);
-  }
-  
   for(int e = 0; e < epochs; e++) {
     reader.loop_to_beg();
+    
+    float entr_sum = 0;
+    for(int b = 0; b < reader.number_of_entries/NTHREADS; b++) {
+      std::vector<std::thread> threads;
 
-    for(int i = 0; i < reader.number_of_entries;) {
-      for(int b = 0; b < batch_count; b++, i++) {
+      for(int t = 0; t < NTHREADS; t++) {
         reader.read_next();
-        reader.last_read.ht = reader.last_read.ht*reader.last_read.wt;
-        reader.last_read.wt = 1;
-
-        memset(Y.v, 0, layers[layers_count-1].out_shape*sizeof(float));
-        Y.v[reader.last_lable] = 1;
-
-        train(reader.last_read, Y, 0);
-        entr_sum += crossEntropy(threadscache[0][layers_count-1].a.v, Y.v, Y.ht);
-
-        for(int o = 0; o < layers_count; o++) {
-          addMat(batch[o].dW, threadscache[0][o].dW, batch[o].dW);
-          addMat(batch[o].dB, threadscache[0][o].dB, batch[o].dB);
-        }
-
-        if (i % 1000 == 0) { 
-          t++; 
-          float learning_rate = initial_learning_rate * sqrt(1 - pow(beta1, t)) / (1- pow(beta2, t));
-          std::cout << "on epoch " << e << "/" << i << " batch " << batch_count << " entropy average: " << entr_sum / 1000.0 << " with learning rate: " << learning_rate << "\n";
-          entr_sum = 0;
-        }
+        copyMatricesOfSameSize(reader.last_read, threadscache[t].a[-1]);
+        zeroMat(threadscache[t].Y);
+        threadscache[t].Y.v[reader.last_lable] = 1;
+        threads.emplace_back(std::thread(&Net::train, this, &(threadscache[t])));
       }
 
-      apply_gradient(batch, t, 0);
-      for(int o = 0; o < layers_count; o++) {
-        memset(batch[o].dW.v, 0, batch[o].in_shape*batch[o].out_shape*sizeof(float));
-        memset(batch[o].dB.v, 0, batch[o].out_shape*sizeof(float));
+      for (int t = 0; t < NTHREADS; t++) {
+        threads[t].join();
+        entr_sum += apply_gradient(threadscache[t]);
+      }
+
+      if(b % 50 == 49) {
+        std::cout << "entropy " << b << " " << entr_sum/(NTHREADS*50) << " -------------------\n";
+        entr_sum = 0;
       }
     }
   }
 }
 
-void Net::train(Matrix& X, Matrix& Y, int thread_i) {
-  forward_prop(X, thread_i);
-  backward_prop(Y, thread_i);
-  
-}
-
-void Net::apply_gradient(DenseCache* cache, int t, int thread_i) {
-  float learning_rate = initial_learning_rate * sqrt(1 - pow(beta1, t)) / (1- pow(beta2, t));
-  learning_rate = std::min<float>(0.5, learning_rate);
-
-  for(int i = 0; i < layers_count; i++) {
-    addMat(layers[i].w, cache[i].dW * -learning_rate, layers[i].w);
-    addMat(layers[i].b, cache[i].dB * -learning_rate, layers[i].b);
+float Net::apply_gradient(Cache& cache) {
+  for(size_t i = 0; i < layers_count; i++) {
+    addMat<8>(cache.dW[i] * (-learning_rate), layers[i].w);
+    addMat<8>(cache.dB[i] * (-learning_rate), layers[i].b);
   }
 
+  return crossEntropy(cache.a[layers_count-1].v, cache.Y.v, cache.Y.ht);
 }
 
-void Net::backward_prop(Matrix &Y, int thread_i) {
-  DenseCache* caches = threadscache[thread_i];
+void Net::test(MnistReader& reader) {
+  Cache cache = threadscache[0];
+  size_t out_shape = layers[layers_count -1].out_shape;
+  Matrix preds = {out_shape, out_shape};
 
-  int i = layers_count-1;
-  addMat(caches[i].a, Y*-1, caches[i].dB); Y*-1; //cross entropy softmax, derivation, dB = DZ 
-  addMulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
-  
-  for(;i >= 1;) {
-    float vdA[caches[i].a_prev->ht];
-    Matrix dA_prev = {caches[i].a_prev->ht, 1,vdA};
-    mulMatATB(layers[i].w, caches[i].dB, dA_prev);
-    i--;
-    layers[i].back_activation(vdA, caches[i].a.v, caches[i].a.ht, caches[i].dB.v); // dB = dZ
-    addMulMatABT(caches[i].dB, *(caches[i].a_prev), caches[i].dW);
-  }
-}
-
-void Net::test(MnistReader& reader, int thread_i) {
-  int out_shape = threadscache[thread_i][layers_count -1].out_shape;
-  float guessedv[out_shape*out_shape];
-  Matrix guessed = {out_shape, out_shape, guessedv};
-  memset(guessedv, 0, guessed.ht*guessed.wt*sizeof(int));
-
-  float count[out_shape*out_shape];
-  memset(count, 0, out_shape*sizeof(int));
+  float* count = new float[out_shape*out_shape];
+  std::fill(count, count + out_shape*out_shape, 0);
 
   int total_correct = 0;
 
@@ -261,27 +220,27 @@ void Net::test(MnistReader& reader, int thread_i) {
     reader.last_read.ht = reader.last_read.ht*reader.last_read.wt;
     reader.last_read.wt = 1;
 
-    Matrix preds = forward_prop(reader.last_read, 0);
+    Matrix preds = forward_prop(cache);
     auto max = std::distance(preds.v, std::max_element(preds.v, preds.v + preds.ht));
 
     count[reader.last_lable]++;
-    guessed[reader.last_lable][max]++; 
-    if (max == reader.last_lable) {
-      total_correct++;
-    }
+    preds[reader.last_lable][max]++; 
+    if (max == reader.last_lable) total_correct++;
   }
 
-  for(int x = 0; x < out_shape; x++) {
-    for(int y = 0; y < out_shape; y++) {
-      guessed[x][y] = guessed[x][y] / count[x];
+  for(size_t x = 0; x < out_shape; x++) {
+    for(size_t y = 0; y < out_shape; y++) {
+      preds[x][y] = preds[x][y] / count[x];
     }
   }
   
   std::cout << "guess count\n";
-  printMat(guessed);
+  printMat(preds);
   std::cout << "drew\n";
-  drawMat(guessed);
+  drawMat(preds, 1);
 
   std::cout << "\ntotal accuracy: " << static_cast<float>(total_correct) / static_cast<float>(reader.number_of_entries) << "\n";
+
+  delete [] count;
 }
 

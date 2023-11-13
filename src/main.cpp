@@ -12,37 +12,24 @@
 #include "../src/network/math.hpp"
 #include "mnist_reader.hpp"
 
-void handler(int sig) {
-  void *array[10];
-  size_t size;
-
-  // get void*'s for all entries on the stack
-  size = backtrace(array, 10);
-
-  // print out all the frames to stderr
-  fprintf(stderr, "Error: signal %d:\n", sig);
-  backtrace_symbols_fd(array, size, STDERR_FILENO);
-  exit(1);
-}
-
 int main() {
-  srand ( time(NULL) );
-  signal(SIGSEGV, handler);
-  signal(SIGABRT, handler);
-  
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
-  
-  Dense layers[] = {
-    DENSE(784, 120, RELU),
-    DENSE(120, 84, RELU),
-    DENSE(84, 10, SOFTMAX),
+
+  const size_t LENGTH = 3;
+  Dense layers[LENGTH] = {
+    {784, 120},
+    {120, 84},
+    {84, 10},
   };
 
-  Net net(layers, 3);
-  net.train_epochs(training_data, 5);
+  Net net(layers, LENGTH);
+  Matrix X(784, 1);
+  Matrix Y(10, 1);
 
-  MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
-  net.test(test_data, 0);
+  net.train_epochs(training_data, 200);
+
+  //MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
+  //net.test(test_data);
 
   return 0;
 }

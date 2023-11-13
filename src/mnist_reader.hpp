@@ -2,6 +2,7 @@
 #define MNIST_READER
 
 #include <ios>
+#include <iostream>
 #include <string>
 #include <fstream>
 #include "network/math.hpp"
