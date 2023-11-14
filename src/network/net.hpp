@@ -1,7 +1,3 @@
-#include "math.hpp"
-#include "../mnist_reader.hpp"
-#include <array>
-
 #ifndef NET_H
 #define NET_H
 
@@ -9,6 +5,10 @@
 #define SIGMOID 1
 #define SOFTMAX 2
 #define NTHREADS 6
+
+#include "math.hpp"
+#include "../mnist_reader.hpp"
+#include <array>
 
 struct Dense {
   size_t in_shape, out_shape;
@@ -24,6 +24,8 @@ struct Dense {
 
 struct Cache {
   Matrix* a; //activations a[-1] is duplicate of trained sample 
+  Matrix* w;
+  Matrix* b;
   Matrix* dB; 
   Matrix* dW;
   Matrix Y;
@@ -50,6 +52,8 @@ class Net {
     void test(MnistReader& reader);
     void print_layer(size_t i, Cache& cache);
     void print_layer(size_t i, size_t t);
+    void initialize_cache(Cache& cache);
+    void prepare_cache(Matrix& X, int y, Cache& cache);
     float train_sample(Matrix &X, Matrix&Y) {
       copyMatricesOfSameSize(X, threadscache[0].a[-1]);
       copyMatricesOfSameSize(Y, threadscache[0].Y);

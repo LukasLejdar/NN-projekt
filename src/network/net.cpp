@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <bits/stdc++.h>
 #include <thread>
+#include "activations.hpp"
 #include "net.hpp"
 #include "math.hpp"
 #include "../mnist_reader.hpp"
@@ -42,45 +43,6 @@ Dense& Dense::operator=(const Dense& other) {
   return *this;
 }
 
-// activations --------------------------------------
-
-void relu(float v[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    v[i]=std::max<float>(0.0, v[i]);
-  }
-}
-
-void relu_backward(float dA[], float A[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    dA[i] = (A[i] > 0) * dA[i];
-  }
-}
-
-void sigmoid(float v[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    v[i] = 1 / (1 + exp(-v[i]));
-  }
-}
-
-void softmax(float v[], size_t length) {
-  float sum = 0;
-  for(size_t i = 0; i < length; i++) {
-    v[i] = exp(v[i]);
-    sum += v[i];
-  }
-  for(size_t i = 0; i < length; i++) {
-    v[i] = v[i] / sum;
-  }
-}
-
-float crossEntropy(float *v, float *y, size_t length) {
-  float sum = 0;
-  for(size_t i = 0; i < length; i++) {
-    sum -= y[i]*log(v[i]);
-  }
-  return sum;
-}
-
 // Net ----------------------------------------------
 
 void Net::print_layer(size_t i, size_t t) {
@@ -106,24 +68,32 @@ void Net::print_layer(size_t i, Cache& cache) {
     std::cout << "\n";
 }
 
+void Net::initialize_cache(Cache& cache) {
+  cache.b = new Matrix[layers_count];
+  cache.w = new Matrix[layers_count];
+  cache.dB = new Matrix[layers_count];
+  cache.dW = new Matrix[layers_count];
+  cache.a = new Matrix[layers_count+1] + 1; // leave space for input
+
+  cache.a[-1] = Matrix(layers[0].in_shape, 1); // input
+  cache.Y = Matrix(layers[layers_count-1].out_shape, 1);
+
+  for(size_t i = 0; i < layers_count; i++) {
+    cache.a[i] = Matrix(layers[i].out_shape, 1);
+    cache.b[i] = Matrix(layers[i].out_shape, 1);
+    cache.w[i] = Matrix(layers[i].out_shape, layers[i].in_shape);
+    cache.dB[i] = Matrix(layers[i].out_shape, 1);
+    cache.dW[i] = Matrix(layers[i].out_shape, layers[i].in_shape);
+  }
+}
+
 Net::Net(Dense _layers[], size_t length) {
   layers_count = length;
   layers = new Dense[length];
   std::copy(_layers, _layers+length, layers);
 
   for(size_t t = 0; t < NTHREADS; t++) {
-    threadscache[t].dB = new Matrix[length];
-    threadscache[t].dW = new Matrix[length];
-    threadscache[t].a = new Matrix[length+1] + 1; // leave space for input
-    threadscache[t].a[-1] = Matrix(layers[0].in_shape, 1);
-    threadscache[t].Y = Matrix(layers[layers_count-1].out_shape, 1);
-
-    // << "initialized cache arrays\n";
-    for(size_t i = 0; i < length; i++) {
-      threadscache[t].a[i] = Matrix(layers[i].out_shape, 1);
-      threadscache[t].dB[i] = Matrix(layers[i].out_shape, 1);
-      threadscache[t].dW[i] = Matrix(layers[i].out_shape, layers[i].in_shape);
-    }
+    initialize_cache(threadscache[t]);
   }
 
   // << "before randomize\n";
@@ -167,20 +137,30 @@ void Net::train(Cache* cache) {
   back_prop(*cache);
 }
 
+void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
+    copyMatricesOfSameSize(X, cache.a[-1]);
+    zeroMat(cache.Y);
+    cache.Y.v[y] = 1;
+    
+    for(size_t i = 0; i < layers_count; i++) {
+      copyMatricesOfSameSize(layers[i].w, cache.w[i]);
+      copyMatricesOfSameSize(layers[i].b, cache.b[i]);
+    }
+}
+  
 void Net::train_epochs(MnistReader& reader, int epochs) {
+  std::thread* threads = new std::thread[NTHREADS];
+
   for(int e = 0; e < epochs; e++) {
     reader.loop_to_beg();
     
     float entr_sum = 0;
     for(int b = 0; b < reader.number_of_entries/NTHREADS; b++) {
-      std::vector<std::thread> threads;
 
       for(int t = 0; t < NTHREADS; t++) {
         reader.read_next();
-        copyMatricesOfSameSize(reader.last_read, threadscache[t].a[-1]);
-        zeroMat(threadscache[t].Y);
-        threadscache[t].Y.v[reader.last_lable] = 1;
-        threads.emplace_back(std::thread(&Net::train, this, &(threadscache[t])));
+        prepare_cache(reader.last_read, reader.last_lable, threadscache[t]);
+        threads[t] = std::thread(&Net::train, this, &(threadscache[t]));
       }
 
       for (int t = 0; t < NTHREADS; t++) {

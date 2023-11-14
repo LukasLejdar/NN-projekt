@@ -26,7 +26,7 @@ int main() {
   Matrix X(784, 1);
   Matrix Y(10, 1);
 
-  net.train_epochs(training_data, 200);
+  net.train_epochs(training_data, 5);
 
   //MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
   //net.test(test_data);
