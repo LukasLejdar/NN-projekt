@@ -1,14 +1,16 @@
 #ifndef NET_H
 #define NET_H
 
+#include <mutex>
+#include <array>
+#include "math.hpp"
+#include "../mnist_reader.hpp"
+
 #define RELU 0
 #define SIGMOID 1
 #define SOFTMAX 2
-#define NTHREADS 6
+#define NTHREADS 4
 
-#include "math.hpp"
-#include "../mnist_reader.hpp"
-#include <array>
 
 struct Dense {
   size_t in_shape, out_shape;
@@ -34,6 +36,8 @@ struct Cache {
     delete [] (a-1);
     delete [] dB; 
     delete [] dW;
+    delete [] w;
+    delete [] b;
   };
 };
 
@@ -54,19 +58,14 @@ class Net {
     void print_layer(size_t i, size_t t);
     void initialize_cache(Cache& cache);
     void prepare_cache(Matrix& X, int y, Cache& cache);
-    float train_sample(Matrix &X, Matrix&Y) {
-      copyMatricesOfSameSize(X, threadscache[0].a[-1]);
-      copyMatricesOfSameSize(Y, threadscache[0].Y);
-      train(&threadscache[0]);
-      return apply_gradient(threadscache[0]);
-    }
 
   private:
+    std::mutex* mtx;
     Dense* layers;
     Cache threadscache[NTHREADS];
 
-    void train(Cache* cache);
-    float apply_gradient(Cache& cache);
+    void train(Cache* cache, MnistReader* reader, int t_index);
+    void apply_gradient(Cache& cache, int t_index);
     void back_prop(Cache& cache);
 };
 

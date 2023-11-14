@@ -29,12 +29,13 @@ class Matrix {
     }
 
     Matrix(size_t ht, size_t wt, float* v_): ht(ht), wt(wt) {
+      //std::cout << "matric initializer " << ht << " - " << wt << "\n";
       v = new float[ht*wt];
       std::copy(v_, v_+ht*wt, v);
     }
 
     Matrix(size_t ht, size_t wt): ht(ht), wt(wt) {
-      //std::cout << "empty initializer " << ht << " - " << wt << "\n";
+      //std::cout << "matrix empty initializer " << ht << " - " << wt << "\n";
       v = new float[ht*wt];
       std::fill(v, v+ht*wt, 0);
     }
@@ -76,7 +77,7 @@ class Matrix {
 };
 
 void printMat(Matrix& m);
-void drawMat(Matrix& m, float sensitivity);
+void drawMat(Matrix& m, float sensitivity = 1);
 void randomizeMat(Matrix& m);
 void zeroMat(Matrix& m);
 void copyMatricesOfSameSize(Matrix& from, Matrix& to);

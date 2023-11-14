@@ -5,8 +5,10 @@
 #include <cstring>
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <iterator>
 #include <math.h>
+#include <mutex>
 #include <sched.h>
 #include <string>
 #include <iostream>
@@ -14,6 +16,7 @@
 #include <algorithm>
 #include <bits/stdc++.h>
 #include <thread>
+#include <vector>
 #include "activations.hpp"
 #include "net.hpp"
 #include "math.hpp"
@@ -89,6 +92,7 @@ void Net::initialize_cache(Cache& cache) {
 
 Net::Net(Dense _layers[], size_t length) {
   layers_count = length;
+  mtx = new std::mutex[length];
   layers = new Dense[length];
   std::copy(_layers, _layers+length, layers);
 
@@ -96,20 +100,14 @@ Net::Net(Dense _layers[], size_t length) {
     initialize_cache(threadscache[t]);
   }
 
-  // << "before randomize\n";
-  for(size_t i = 0; i < length; i++) {
-    randomizeMat(layers[i].w);
-    auto [mean, varience] = getVarAndExp(layers[i].w);
-    std::cout << "layer " << i << " weights mean " << mean << "\n";
-    std::cout << "layer " << i << " weights varience " << varience << " expected " << 1.0 / layers[i].w.wt << "\n";
-  }
+  for(size_t i = 0; i < length; i++) { randomizeMat(layers[i].w); }
 }
 
 //TODO: benchmark forwad_prop
 Matrix& Net::forward_prop(Cache& cache) {
   for(size_t i = 0; i < layers_count; i++) {
-    matMul<8>(layers[i].w, cache.a[i-1], cache.a[i]);
-    addMat<8>(layers[i].b, cache.a[i]);
+    matMul<8>(cache.w[i], cache.a[i-1], cache.a[i]);
+    addMat<8>(cache.b[i], cache.a[i]);
     
     if(i == layers_count-1) { softmax(cache.a[i].v, cache.a[i].ht); }
     else { relu(cache.a[i].v, cache.a[i].ht); }
@@ -125,16 +123,25 @@ void Net::back_prop(Cache& cache) {
   mulMatAvT<8>(cache.dB[i], cache.a[i-1], cache.dW[i]);
   
   for(;i > 0;) {
-    matMulATB<8>(layers[i].w, cache.dB[i], cache.dB[i-1]);
+    matMulATB<8>(cache.w[i], cache.dB[i], cache.dB[i-1]);
     i--;
     relu_backward(cache.dB[i].v, cache.a[i].v, cache.a[i].ht);
     mulMatAvT<8>(cache.dB[i], cache.a[i-1], cache.dW[i]);
   }
 }
 
-void Net::train(Cache* cache) {
-  forward_prop(*cache);
-  back_prop(*cache);
+void Net::apply_gradient(Cache& cache, int t_index) {
+  for(size_t i = 0; i < layers_count; i++) {
+    cache.dW[i] * (-learning_rate);
+    cache.dB[i] * (-learning_rate);
+  }
+
+  for(size_t i = 0; i < layers_count; i++) {
+    mtx[i].lock();
+    addMat<8>(cache.dW[i], layers[i].w);
+    addMat<8>(cache.dB[i], layers[i].b);
+    mtx[i].unlock();
+  }
 }
 
 void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
@@ -147,42 +154,53 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
       copyMatricesOfSameSize(layers[i].b, cache.b[i]);
     }
 }
-  
-void Net::train_epochs(MnistReader& reader, int epochs) {
-  std::thread* threads = new std::thread[NTHREADS];
 
-  for(int e = 0; e < epochs; e++) {
-    reader.loop_to_beg();
-    
-    float entr_sum = 0;
-    for(int b = 0; b < reader.number_of_entries/NTHREADS; b++) {
+void Net::train(Cache* cache, MnistReader* reader, int t_index) {
+  //int i = 0;
+  //float entr_sum = 0;
+  while(true) {
+    if (!reader->read_next()) return;
 
-      for(int t = 0; t < NTHREADS; t++) {
-        reader.read_next();
-        prepare_cache(reader.last_read, reader.last_lable, threadscache[t]);
-        threads[t] = std::thread(&Net::train, this, &(threadscache[t]));
-      }
+    prepare_cache(reader->last_read, reader->last_lable, *cache);
+    forward_prop(*cache);
+    back_prop(*cache);
+    apply_gradient(*cache, t_index); 
 
-      for (int t = 0; t < NTHREADS; t++) {
-        threads[t].join();
-        entr_sum += apply_gradient(threadscache[t]);
-      }
-
-      if(b % 50 == 49) {
-        std::cout << "entropy " << b << " " << entr_sum/(NTHREADS*50) << " -------------------\n";
-        entr_sum = 0;
-      }
-    }
+    //i++;
+    //entr_sum += crossEntropy((*cache).a[layers_count-1].v, (*cache).Y.v, (*cache).Y.ht);
+    //if(i % 500 == 0) { 
+    //  std::cout << "on thread " << t_index << " sample " << i << " with average entropy " << entr_sum/500 << "\n"; 
+    //  entr_sum = 0;
+    //}
   }
 }
 
-float Net::apply_gradient(Cache& cache) {
-  for(size_t i = 0; i < layers_count; i++) {
-    addMat<8>(cache.dW[i] * (-learning_rate), layers[i].w);
-    addMat<8>(cache.dB[i] * (-learning_rate), layers[i].b);
+void Net::train_epochs(MnistReader& reader, int epochs) {
+  std::thread threads[NTHREADS-1];
+
+  //every thread has its own reader
+  size_t threads_lot = reader.number_of_entries / NTHREADS;
+  MnistReader* threads_readers[NTHREADS];
+  for(int t = 0; t < NTHREADS; t++) {
+    threads_readers[t] = new MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
   }
 
-  return crossEntropy(cache.a[layers_count-1].v, cache.Y.v, cache.Y.ht);
+  for(int e = 0; e < epochs; e++) {
+    std::cout << "epoch " << e << "\n"; 
+    for(int t = 0; t < NTHREADS-1; t++) 
+      threads[t] = std::thread(&Net::train, this, &threadscache[t], threads_readers[t], t);
+
+    train(&threadscache[NTHREADS-1], threads_readers[NTHREADS-1], NTHREADS-1);
+    threads_readers[NTHREADS-1]->loop_to_beg();
+
+    for(int t = 0; t < NTHREADS-1; t++) { 
+      threads[t].join();
+      threads_readers[t]->loop_to_beg();
+    }
+  }
+  
+  for(auto th_reader : threads_readers) delete th_reader;
+  std::cout << "training finished" << "\n"; 
 }
 
 void Net::test(MnistReader& reader) {
@@ -197,8 +215,7 @@ void Net::test(MnistReader& reader) {
 
   for(int i = 0; i < reader.number_of_entries; i++) {
     reader.read_next();
-    reader.last_read.ht = reader.last_read.ht*reader.last_read.wt;
-    reader.last_read.wt = 1;
+    prepare_cache(reader.last_read, reader.last_lable, cache);
 
     Matrix preds = forward_prop(cache);
     auto max = std::distance(preds.v, std::max_element(preds.v, preds.v + preds.ht));

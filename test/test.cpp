@@ -6,6 +6,7 @@
 #include <iostream>
 #include "../src/network/math.hpp"
 #include "../src/network/net.hpp"
+#include "../src/mnist_reader.hpp"
 
 #define TEST(x, error_message) { if (!(x)) std::cout << __FUNCTION__ << " failed on line " << __LINE__  << " executing " << error_message << std::endl; }
 
@@ -268,6 +269,17 @@ void testMatOperation(Matrix* list, std::string text) {
 }
 
 int main(void) {
+  MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
+  training_data.read_next();
+  training_data.read_next();
+  drawMat(training_data.last_read);
+  std::cout << "\nsame image expected\n\n";
+  MnistReader sub_reader = MnistReader(training_data, 0, 10);
+  sub_reader.read_next();
+  sub_reader.read_next();
+  drawMat(sub_reader.last_read);
+  std::cout << "\n";
+
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
   testMatOperation(getTransposeTest2(), "transpose test 2");
@@ -277,18 +289,7 @@ int main(void) {
   testMatOperation(getMulTest3(), "mulMat test 3");
   testMatOperation(getMatMulScalerTest(), "scaler test");
   testMatOperation(getAddTest(), "addMat test 0");
-  //testMatOperation(getMulTest0ABT(), "mulTestABT test 0");
   testMatOperation(getMulTest1ABT(), "mulTestABT test 1");
   testMatOperation(getMulTest0ATB(), "mulTestATB test 0");
   testMatOperation(getMulTest1ATB(), "mulTestATB test 1");
-
-  std::cout << "\nrandomization test\n";
-  Matrix m(20, 20);
-  randomizeMat(m);
-  //printMat(m);
-  //drawMat(m, 1);
-  float sum = 0;
-  for(size_t i = 0; i < m.wt*m.ht; i++) sum += m.v[i];
-  std::cout << "\nmean " << sum << "\n";
-
 }

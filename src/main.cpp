@@ -14,18 +14,16 @@
 
 int main() {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
+  //training_data.number_of_entries = 12;
 
   const size_t LENGTH = 3;
   Dense layers[LENGTH] = {
     {784, 120},
-    {120, 84},
-    {84, 10},
+    {120, 80},
+    {80, 10},
   };
 
   Net net(layers, LENGTH);
-  Matrix X(784, 1);
-  Matrix Y(10, 1);
-
   net.train_epochs(training_data, 5);
 
   //MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
