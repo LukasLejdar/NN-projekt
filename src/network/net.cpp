@@ -48,29 +48,6 @@ Dense& Dense::operator=(const Dense& other) {
 
 // Net ----------------------------------------------
 
-void Net::print_layer(size_t i, size_t t) {
-  print_layer(i, threadscache[t]);
-}
-
-void Net::print_layer(size_t i, Cache& cache) {
-    std::cout << "\nweights\n";
-    printMat(layers[i].w);
-
-    std::cout << "\nbiases\n";
-    printMat(layers[i].b);
-
-    std::cout << "\nact\n";
-    printMat(cache.a[i]);
-
-    std::cout << "\ndWeights\n";
-    printMat(cache.dW[i]);
-
-    std::cout << "\ndBiases\n";
-    printMat(cache.dB[i]);
-
-    std::cout << "\n";
-}
-
 void Net::initialize_cache(Cache& cache) {
   cache.b = new Matrix[layers_count];
   cache.w = new Matrix[layers_count];
@@ -156,8 +133,6 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
 }
 
 void Net::train(Cache* cache, MnistReader* reader, int t_index) {
-  //int i = 0;
-  //float entr_sum = 0;
   while(true) {
     if (!reader->read_next()) return;
 
@@ -165,13 +140,6 @@ void Net::train(Cache* cache, MnistReader* reader, int t_index) {
     forward_prop(*cache);
     back_prop(*cache);
     apply_gradient(*cache, t_index); 
-
-    //i++;
-    //entr_sum += crossEntropy((*cache).a[layers_count-1].v, (*cache).Y.v, (*cache).Y.ht);
-    //if(i % 500 == 0) { 
-    //  std::cout << "on thread " << t_index << " sample " << i << " with average entropy " << entr_sum/500 << "\n"; 
-    //  entr_sum = 0;
-    //}
   }
 }
 

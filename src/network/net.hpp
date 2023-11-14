@@ -5,32 +5,15 @@
 #include <array>
 #include "math.hpp"
 #include "../mnist_reader.hpp"
+#include "layer.hpp"
 
-#define RELU 0
-#define SIGMOID 1
-#define SOFTMAX 2
 #define NTHREADS 4
 
-
-struct Dense {
-  size_t in_shape, out_shape;
-  Matrix w;
-  Matrix b;
-
-  Dense(): in_shape(0), out_shape(0), w({}), b({}) {}
-  Dense(const Dense& other);
-  Dense(size_t in_shape, size_t out_shape);
-  void swap(Dense& other);
-  Dense& operator=(const Dense& other);
-};
-
 struct Cache {
-  Matrix* a; //activations a[-1] is duplicate of trained sample 
-  Matrix* w;
-  Matrix* b;
-  Matrix* dB; 
-  Matrix* dW;
-  Matrix Y;
+  Matrix Y; 
+  Matrix *a; //activations a[-1] is a duplicate of trained sample 
+  Matrix *w, *b;
+  Matrix *dB,*dW; 
 
   ~Cache() {
     delete [] (a-1);
