@@ -4,11 +4,10 @@
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
+#include "test.hpp"
 #include "../src/network/math.hpp"
 #include "../src/network/net.hpp"
 #include "../src/mnist_reader.hpp"
-
-#define TEST(x, error_message) { if (!(x)) std::cout << __FUNCTION__ << " failed on line " << __LINE__  << " executing " << error_message << std::endl; }
 
 Matrix* getTransposeTest0() {
   float v[] = { 
@@ -229,6 +228,24 @@ Matrix* getMulTest1ATB() {
   return list;
 }
 
+Matrix* getMulTest2ATB() {
+  float v0[] = {
+    1, 2, 4,
+    3, 4, 2};
+  Matrix m0 = {2,3,v0};
+  float v1[] = {
+    2,
+    1};
+  Matrix m1 = {2,1,v1};
+  float correct[]{
+    5,
+    8,
+    10};
+  Matrix* list = new Matrix[]{{3,1}, {3,1,correct}};
+  matMulATB<8>(m0, m1, list[0]);
+  return list;
+} 
+
 Matrix* getAddTest() {
   float v[] = { 
     1, 2, 2,
@@ -248,38 +265,15 @@ Matrix* getAddTest() {
   return list;
 }
 
-void testMatOperation(Matrix* list, std::string text) {
-  for(size_t x = 0; x < list[1].ht; x++) {
-    for(size_t y = 0; y < list[1].wt; y++) {
-      if(list[0][x][y] != list[1][x][y]) {
-        std::cout << "\ngot: \n";
-        printMat(list[0]);
-        std::cout << "expected: \n";
-        printMat(list[1]);
-
-        std::string error_message = text + " with indices " + std::to_string(x) +" "+ std::to_string(y);
-        TEST(false, error_message);
-        return;
-      }
-    }
-  }
-  
-  delete [] list;
-  std::cout << text << " complete\n";
-}
-
 int main(void) {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
   training_data.read_next();
-  training_data.read_next();
   drawMat(training_data.last_read);
-  std::cout << "\nsame image expected\n\n";
+  std::cout << "\nsame image expected\n";
   MnistReader sub_reader = MnistReader(training_data, 0, 10);
   sub_reader.read_next();
-  sub_reader.read_next();
-  drawMat(sub_reader.last_read);
-  std::cout << "\n";
 
+  drawMat(sub_reader.last_read);
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
   testMatOperation(getTransposeTest2(), "transpose test 2");
@@ -292,4 +286,6 @@ int main(void) {
   testMatOperation(getMulTest1ABT(), "mulTestABT test 1");
   testMatOperation(getMulTest0ATB(), "mulTestATB test 0");
   testMatOperation(getMulTest1ATB(), "mulTestATB test 1");
+  testMatOperation(getMulTest2ATB(), "mulTestATB test 2");
 }
+

@@ -62,93 +62,93 @@ Matrix* getMulTest2() {
 
 void benchMatMul() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 8 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul 8: %0.3f ms \n");
   matMul<8>(list[0], list[1], list[2]);
 
 }
 
 void benchMatMul1() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 16 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul 16: %0.3f ms \n");
   matMul<16>(list[0], list[1], list[2]);
 }
 
 void benchMatMul2() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 32 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul 32: %0.3f ms \n");
   matMul<32>(list[0], list[1], list[2]);
 }
 
 void benchMatMul3() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 64 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul 64: %0.3f ms \n");
   matMul<64>(list[0], list[1], list[2]);
 }
 
 void benchMatMul4() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul 128 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul 128: %0.3f ms \n");
   matMul<128>(list[0], list[1], list[2]);
 }
 
 void benchMatMulScalerm1() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul with scaler -1 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul with scaler -1: %0.3f ms \n");
   matMul<8, -1>(list[0], list[1], list[2]);
 }
 
 void benchMatMulScaler1() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul with scaler 1 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul with scaler 1: %0.3f ms \n");
   matMul<8, 1>(list[0], list[1], list[2]);
 }
 
 void benchMatMulScaler6() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul with scaler 6 time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMul with scaler 6: %0.3f ms \n");
   matMul<8, 6>(list[0], list[1], list[2]);
 }
 
 void benchMatMulABT() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMulABT time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMulABT: %0.3f ms \n");
   transpose<8>(list[2], list[1]);
   matMul<8>(list[0], list[1], list[2]);
 }
 
 void benchMatMulATB() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMulATB time in ms: %0.3f \n");
+  Timer timer = Timer("bench matMulATB: %0.3f ms \n");
   matMulATB<8>(list[0], list[1], list[2]);
 }
 
 void benchTranspose0() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench transpose square matrix time in ms: %0.3f \n");
+  Timer timer = Timer("bench transpose square matrix: %0.3f ms \n");
   transpose<8>(list[0], list[2]);
 }
 
 void benchTranspose1() {
   Matrix* list = getMulTest2();
-  Timer timer = Timer("bench transpose rectangular matrix wider time in ms: %0.3f \n");
+  Timer timer = Timer("bench transpose rectangular matrix wider: %0.3f ms \n");
   transpose<8>(list[0], list[2]);
 }
 
 void benchTranspose2() {
   Matrix* list = getMulTest2();
-  Timer timer = Timer("bench transpose rectangular matrix taller time in ms: %0.3f \n");
+  Timer timer = Timer("bench transpose rectangular matrix taller: %0.3f ms \n");
   transpose<8>(list[1], list[0]);
 }
 
 void benchAddMat() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench add matricies time in ms: %0.3f \n");
+  Timer timer = Timer("bench add matricies: %0.3f ms \n");
   addMat<8>(list[1], list[0]);
 }
 
 void benchZeroMat() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench zero mat time in ms: %0.3f \n");
+  Timer timer = Timer("bench zero mat: %0.3f ms \n");
   zeroMat(list[0]);
   timer.stop();
 }

@@ -7,40 +7,35 @@
 #ifndef MATH_H
 #define MATH_H
 
-/// Matrix stores its values in a single array v
 /// m[x][y] = v[x*width+y]
-/// y ----- width
-/// x 1 2 3 
-/// | 4 5 6 => 1 2 3 4 5 6 7 8 9 
-/// | 7 8 9
-/// height
-class Matrix {
+template<class T>
+class MatrixT {
   public:
     size_t ht;
     size_t wt;
-    float* v;
+    T* v;
 
-    Matrix(): ht(0), wt(0), v(nullptr) {}
+    MatrixT(): ht(0), wt(0), v(nullptr) {}
 
-    Matrix(const Matrix &other): ht(other.ht), wt(other.wt){
-      //std::cout << "copy Matrix " << ht << " - " << wt << "\n"; 
-      v = new float[ht*wt];
+    MatrixT(const MatrixT &other): ht(other.ht), wt(other.wt){
+      //std::cout << "copy MatrixT " << ht << " - " << wt << "\n"; 
+      v = new T[ht*wt];
       std::copy(other.v, other.v+ht*wt, v);
     }
 
-    Matrix(size_t ht, size_t wt, float* v_): ht(ht), wt(wt) {
+    MatrixT(size_t ht, size_t wt, float* v_): ht(ht), wt(wt) {
       //std::cout << "matric initializer " << ht << " - " << wt << "\n";
       v = new float[ht*wt];
       std::copy(v_, v_+ht*wt, v);
     }
 
-    Matrix(size_t ht, size_t wt): ht(ht), wt(wt) {
+    MatrixT(size_t ht, size_t wt): ht(ht), wt(wt) {
       //std::cout << "matrix empty initializer " << ht << " - " << wt << "\n";
-      v = new float[ht*wt];
+      v = new T[ht*wt];
       std::fill(v, v+ht*wt, 0);
     }
 
-    ~Matrix() {
+    ~MatrixT() {
       //std::cout << "delete mat " << ht << " - " << wt << "\n";
       delete [] v;
     }
@@ -50,33 +45,35 @@ class Matrix {
       wt = 1;
     }
 
-    void swap(Matrix& other) {
+    void swap(MatrixT& other) {
       std::swap(other.ht, ht);
       std::swap(other.wt, wt);
       std::swap(other.v, v);
     }
 
-    float* operator[](int p) { return &(v[p*wt]); }
-    Matrix& operator*(float scaler) {
+    T* operator[](int p) { return &(v[p*wt]); }
+    MatrixT& operator*(float scaler) {
       for(size_t i = 0; i < ht*wt; i++) v[i] *= scaler;
       return *this;
     }
 
-    Matrix& operator=(const Matrix& other) {
+    MatrixT& operator=(const MatrixT& other) {
       //std::cout << "const assignment " << other.ht << " - " << other.wt << "\n";
-      Matrix temp(other);
+      MatrixT temp(other);
       swap(temp);
       return *this;
     }
 
-    Matrix& operator=(Matrix& other) {
+    MatrixT& operator=(MatrixT& other) {
       //std::cout << "non const assignment " << ht << " - " << wt << "\n"; 
       swap(other);
       return *this;
     }
 };
 
-void printMat(Matrix& m);
+typedef MatrixT<float> Matrix;
+
+void printMat(Matrix& m, char separator='\0');
 void drawMat(Matrix& m, float sensitivity = 1);
 void randomizeMat(Matrix& m);
 void zeroMat(Matrix& m);
@@ -99,7 +96,6 @@ inline void transpose(Matrix& a, Matrix& result) {
   }
 }
 
-/// result = left*right + result
 template<size_t tileSize, int scaler=1, bool zero=true>
 inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
   size_t ht = left.ht; assert(result.ht == left.ht);
@@ -121,16 +117,15 @@ inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
 }
 
 ///matrixVector multiplication
-template<size_t tileSize>
+template<size_t tileSize, int scaler=1, bool zero=true>
 inline void mulMatAvT(Matrix& left, Matrix& right, Matrix& result) {
   assert(right.ht == 1 || right.wt == 1);
   std::swap(right.ht, right.wt);
-  matMul<tileSize>(left, right, result);
+  matMul<tileSize, scaler, zero>(left, right, result);
   std::swap(right.ht, right.wt);
 }
 
 
-/// result = left^T*right + result
 template<size_t tileSize, int scaler=1, bool zero=true>
 inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
   size_t wt2 = left.wt; assert(result.ht == left.wt);
@@ -145,7 +140,7 @@ inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
 
       for(size_t i = wt2Tile; i < wt2TileEnd; i++) {
         for(size_t j = 0; j < wt; j++) {
-          result.v[i*wt+j] += scaler*(left.v[k*in+i]*right.v[k*wt+j]);
+          result.v[i*wt+j] += scaler*(left.v[k*wt2+i]*right.v[k*wt+j]);
         }
       }
     }

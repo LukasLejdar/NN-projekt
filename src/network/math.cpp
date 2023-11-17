@@ -9,10 +9,10 @@
 #include <tuple>
 #include "math.hpp"
 
-void printMat(Matrix& mat) {
+void printMat(Matrix& mat, char separator) {
   for(size_t x = 0; x < mat.ht; x++) {
     for(size_t y = 0; y < mat.wt; y++) {
-      printf("%6.4lf ", mat[x][y]);
+      printf("%6.14lf%c ", mat[x][y], separator);
     }
     std::cout << "\n";
   }
@@ -52,7 +52,7 @@ std::tuple<float, float> getVarAndExp(Matrix &m) {
 void randomizeMat(Matrix& mat) {
   std::random_device rd;
   std::mt19937 generator(rd());
-  std::normal_distribution<float> distribution(0, sqrt(1.0 / (mat.wt)));
+  std::normal_distribution<float> distribution(0, sqrt(2.0 / (mat.wt + mat.ht)));
 
   for(size_t i = 0; i < mat.wt*mat.ht; i++) {
     mat.v[i] = distribution(generator);

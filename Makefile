@@ -3,18 +3,24 @@ CFLAGS=-Wall -Wextra -pedantic -ggdb
 CC=g++
 
 all: _test _benchmark _net _test_backprop _paralelism
+	mkdir -p build
 
 _parallelism: ./test/parallelism.cpp
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/parallelism ./test/parallelism.cpp ./src/network/math.cpp 
+	mkdir -p build
+	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/parallelism ./test/parallelism.cpp ./src/network/math.cpp
 
 _test: ./test/test.cpp
+	mkdir -p build
 	$(CC) $(CFLAGS) -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp
 
 _benchmark: ./test/benchmark.cpp
+	mkdir -p build
 	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
 
 _net: ./src/main.cpp
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/net ./src/main.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp 
+	mkdir -p build
+	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/net ./src/main.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp ./src/network/layer.cpp
 
 _test_backprop: ./test/test_backprop.cpp
-	$(CC) $(CFLAGS) -o ./build/test_backprop ./test/test_backprop.cpp ./src/network/math.cpp ./src/network/net.cpp  ./src/mnist_reader.cpp 
+	mkdir -p build
+	$(CC) $(CFLAGS) -o ./build/test_backprop ./test/test_backprop.cpp ./src/network/math.cpp ./src/network/net.cpp  ./src/mnist_reader.cpp ./src/network/layer.cpp
