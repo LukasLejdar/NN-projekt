@@ -19,7 +19,7 @@ _benchmark: ./test/benchmark.cpp
 
 _net: ./src/main.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/net ./src/main.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp ./src/network/layer.cpp
+	$(CC) $(CFLAGS)  -o ./build/net ./src/main.cpp ./src/network/math.cpp ./src/network/net.cpp ./src/mnist_reader.cpp ./src/network/layer.cpp
 
 _test_backprop: ./test/test_backprop.cpp
 	mkdir -p build

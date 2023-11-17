@@ -7,9 +7,10 @@
 #include "../mnist_reader.hpp"
 #include "layer.hpp"
 
-#define NTHREADS 4
+#define NTHREADS 6
 
 struct Cache {
+  size_t layers_count;
   Matrix Y; 
   Matrix *a; //activations a[-1] is a duplicate of trained sample 
   Matrix *w, *b;
@@ -27,14 +28,14 @@ struct Cache {
 class Net {
   public:
     size_t layers_count;
-    float learning_rate = 0.001;
+    float learning_rate = 0.005;
+    float decay_rate = 1;
 
     Net(Dense layers[], size_t length);
 
     ~Net() { delete [] layers; }
 
     static void func();
-    Matrix& forward_prop(Cache& cache);
     void train_epochs(MnistReader& reader, int epochs);
     void test(MnistReader& reader);
     void print_layer(size_t i, Cache& cache);
@@ -47,11 +48,12 @@ class Net {
     Dense* layers;
     Cache threadscache[NTHREADS];
 
-    void train(Cache* cache, MnistReader* reader, int t_index);
-    void apply_gradient(Cache& cache, int t_index);
-    void back_prop(Cache& cache);
+    void train(Cache* cache, MnistReader* reader, int t_index, int epoch);
+    void apply_gradient(Cache& cache, int epoch, int sample);
 };
 
+void back_prop(Cache& cache);
+Matrix& forward_prop(Cache& cache);
 void relu(float  v[], int length);
 void sigmoid(float v[], int length);
 void softmax(float v[], int length);
