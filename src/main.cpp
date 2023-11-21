@@ -14,7 +14,7 @@
 
 int main() {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
-  //training_data.number_of_entries = 1;
+  MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
 
   const size_t LENGTH = 2;
   Dense layers[LENGTH] = {
@@ -23,9 +23,8 @@ int main() {
   };
 
   Net net(layers, LENGTH);
-  net.train_epochs(training_data, 50);
+  net.train_epochs(training_data, 80, test_data);
 
-  MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
   net.test(test_data);
 
   return 0;

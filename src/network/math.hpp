@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <assert.h>
+#include <cmath>
 #include <iostream>
+#include <math.h>
 #include <new>
 #include <stdio.h>
 #include <tuple>
@@ -25,7 +27,7 @@ class MatrixT {
 
     MatrixT(size_t ht, size_t wt, float* v_): ht(ht), wt(wt) {
       //std::cout << "matric initializer " << ht << " - " << wt << "\n";
-      v = new float[ht*wt];
+      v = new T[ht*wt];
       std::copy(v_, v_+ht*wt, v);
     }
 
@@ -38,6 +40,10 @@ class MatrixT {
     ~MatrixT() {
       //std::cout << "delete mat " << ht << " - " << wt << "\n";
       delete [] v;
+    }
+
+    void setV(const T _v[]) {
+      std::copy(_v, _v+ht*wt, v);
     }
 
     void faltten() {
@@ -66,7 +72,8 @@ class MatrixT {
 
     MatrixT& operator=(MatrixT& other) {
       //std::cout << "non const assignment " << ht << " - " << wt << "\n"; 
-      swap(other);
+      MatrixT temp(other);
+      swap(temp);
       return *this;
     }
 };
@@ -96,7 +103,7 @@ inline void transpose(Matrix& a, Matrix& result) {
   }
 }
 
-template<size_t tileSize, int scaler=1, bool zero=true>
+template<size_t tileSize, bool zero=true>
 inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
   size_t ht = left.ht; assert(result.ht == left.ht);
   size_t in = left.wt; assert(left.wt == right.ht);
@@ -109,7 +116,7 @@ inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
       size_t innerTileEnd = std::min(in, innerTile + tileSize);
       for(size_t k = innerTile; k < innerTileEnd; k++) {
         for(size_t j = 0; j < wt; j++) {
-          result.v[i*wt+j] += scaler*(left.v[i*in+k]*right.v[k*wt+j]);
+          result.v[i*wt+j] += left.v[i*in+k]*right.v[k*wt+j];
         }
       }
     }
@@ -117,16 +124,16 @@ inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
 }
 
 ///matrixVector multiplication
-template<size_t tileSize, int scaler=1, bool zero=true>
+template<size_t tileSize, bool zero=true>
 inline void mulMatAvT(Matrix& left, Matrix& right, Matrix& result) {
   assert(right.ht == 1 || right.wt == 1);
   std::swap(right.ht, right.wt);
-  matMul<tileSize, scaler, zero>(left, right, result);
+  matMul<tileSize, zero>(left, right, result);
   std::swap(right.ht, right.wt);
 }
 
 
-template<size_t tileSize, int scaler=1, bool zero=true>
+template<size_t tileSize, bool zero=true>
 inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
   size_t wt2 = left.wt; assert(result.ht == left.wt);
   size_t in = left.ht; assert(left.ht == right.ht);
@@ -140,15 +147,15 @@ inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
 
       for(size_t i = wt2Tile; i < wt2TileEnd; i++) {
         for(size_t j = 0; j < wt; j++) {
-          result.v[i*wt+j] += scaler*(left.v[k*wt2+i]*right.v[k*wt+j]);
+          result.v[i*wt+j] += left.v[k*wt2+i]*right.v[k*wt+j];
         }
       }
     }
   }
 }
 
-template<size_t tileSize, int scaler=1>
-inline void addMat(Matrix& m, Matrix& result) {
+template<size_t tileSize>
+inline void addMat(Matrix& m, Matrix& result, float scaler=1) {
   size_t ht = m.ht; assert(m.ht == result.ht);
   size_t wt = m.wt; assert(m.wt == result.wt);
 
@@ -180,5 +187,17 @@ inline void addMat(Matrix& m1, Matrix& m2, Matrix& result) {
   }
 }
 
+inline void adam(Matrix& dw, Matrix& ema, Matrix& ma, float learning_rate, float decay_rate1, float decay_rate2, size_t t) {
+    assert(dw.wt == ema.wt && dw.ht == ema.ht);
+
+    for(size_t i = 0; i < dw.ht*dw.wt; i++) {
+      ma.v[i] =  decay_rate1*ma.v[i] + (1-decay_rate1)*dw.v[i];
+      ema.v[i] =  decay_rate2*ema.v[i] + (1-decay_rate2)*pow(dw.v[i], 2);
+      ma.v[i] = ma.v[i] / (1 - pow(decay_rate1, t));
+      ema.v[i] = ema.v[i] / (1 - pow(decay_rate2, t));
+
+      dw.v[i] = ma.v[i]* -learning_rate/(sqrt(ema.v[i]) + 0.00000001);
+    }
+}
 #endif
 

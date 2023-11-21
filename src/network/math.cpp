@@ -12,7 +12,7 @@
 void printMat(Matrix& mat, char separator) {
   for(size_t x = 0; x < mat.ht; x++) {
     for(size_t y = 0; y < mat.wt; y++) {
-      printf("%6.14lf%c ", mat[x][y], separator);
+      printf("%6.4lf%c ", mat[x][y], separator);
     }
     std::cout << "\n";
   }
