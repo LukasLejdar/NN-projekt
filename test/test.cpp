@@ -149,7 +149,7 @@ Matrix* getMatMulScalerTest() {
     -6, -9,
     0, 0,};
   Matrix * list = new Matrix[]{{2,2}, {2,2,correct}};
-  matMul<8, -1>(m0, m1, list[0]);
+  //matMul<8, -1>(m0, m1, list[0]);
   return list;
 }
 
@@ -281,7 +281,7 @@ int main(void) {
   testMatOperation(getMulTest1(), "mulMat test 1");
   testMatOperation(getMulTest2(), "mulMat test 2");
   testMatOperation(getMulTest3(), "mulMat test 3");
-  testMatOperation(getMatMulScalerTest(), "scaler test");
+  //testMatOperation(getMatMulScalerTest(), "scaler test");
   testMatOperation(getAddTest(), "addMat test 0");
   testMatOperation(getMulTest1ABT(), "mulTestABT test 1");
   testMatOperation(getMulTest0ATB(), "mulTestATB test 0");

@@ -6,33 +6,19 @@
 #include "../src/network/net.hpp"
 #include "test.hpp"
 
-void prepare_cache(Cache& cache, 
-    Matrix* a_correct, 
-    Matrix* dW_correct,
-    Matrix* dB_correct) { 
+void prepare_cache(Cache& cache, Matrix* a_correct, Matrix* dW_correct, Matrix* dB_correct) { 
+  const size_t LENGTH = 3;
+  Dense layers[LENGTH] = {
+    {5,4},
+    {4,3},
+    {3,2}
+  };
 
-  cache.a = new Matrix[cache.layers_count+1] + 1;
-  cache.dW = new Matrix[cache.layers_count];
-  cache.dB = new Matrix[cache.layers_count];
-  cache.w = new Matrix[cache.layers_count];
-  cache.b = new Matrix[cache.layers_count];
-
-  cache.a[0] = Matrix(4, 1);
-  cache.dB[0] = Matrix(4, 1);
-  cache.dW[0] = Matrix(4, 5);
-
-  cache.a[1] = Matrix(3, 1);
-  cache.dB[1] = Matrix(3, 1);
-  cache.dW[1] = Matrix(3, 4);
-
-  cache.a[2] = Matrix(2, 1);
-  cache.dB[2] = Matrix(2, 1);
-  cache.dW[2] = Matrix(2, 3);
+  initialize_cache(cache, layers, LENGTH);
 
   float x[] = {0.23, 0.36, 0.08, 0.12, 0.81};
-  cache.a[-1] = Matrix(5,1,x);
-  float y[] = {0, 1};
-  cache.Y = Matrix(2,1,y);
+  cache.a[-1].setV(x);
+  cache.y = 1;
 
   float w0[] = {
     -0.10, 0.32, -0.30, -0.57, 0.27,
@@ -131,26 +117,45 @@ void prepare_cache(Cache& cache,
 void test_back_prop() {
   float epsilon = 0.0001;
   Cache cache;
-  cache.layers_count = 3;
 
-  Matrix *a_correct = new Matrix[cache.layers_count];
-  Matrix *dW_correct = new Matrix[cache.layers_count];
-  Matrix *dB_correct = new Matrix[cache.layers_count];
+  Matrix *a_correct = new Matrix[3];
+  Matrix *dW_correct = new Matrix[3];
+  Matrix *dB_correct = new Matrix[3];
 
   prepare_cache(cache, a_correct, dW_correct, dB_correct);
-  
-  forward_prop(cache);
-  testMatOperation(new Matrix[]{cache.a[0], a_correct[0]}, "test activations 0", epsilon);
-  testMatOperation(new Matrix[]{cache.a[1], a_correct[1]}, "test activations 1", epsilon);
-  testMatOperation(new Matrix[]{cache.a[2], a_correct[2]}, "test activations 2", epsilon);
 
-  back_prop(cache);
-  testMatOperation(new Matrix[]{cache.dB[2], dB_correct[2]}, "test dB 2", epsilon);
-  testMatOperation(new Matrix[]{cache.dW[2], dW_correct[2]}, "test dW 2", epsilon);
-  testMatOperation(new Matrix[]{cache.dB[1], dB_correct[1]}, "test dB 1", epsilon);
-  testMatOperation(new Matrix[]{cache.dW[1], dW_correct[1]}, "test dW 1", epsilon);
-  testMatOperation(new Matrix[]{cache.dB[0], dB_correct[0]}, "test dB 0", epsilon);
-  testMatOperation(new Matrix[]{cache.dW[0], dW_correct[0]}, "test dW 0", epsilon);
+  Matrix *dW_correcti = new Matrix[3];
+  Matrix *dB_correcti = new Matrix[3];
+
+  // minibatch of 10
+  for(size_t i = 0; i < 2; i++) {
+    zeroDerivatives(cache);
+    for(size_t i = 0; i < 5; i++) {
+
+      for(size_t l = 0; l < cache.layers_count; l++) {
+        dB_correcti[l] = dB_correct[l];
+        dW_correcti[l] = dW_correct[l];
+        dB_correcti[l] * (i+1);
+        dW_correcti[l] * (i+1);
+      }
+
+      std::cout << "\nprocessing sample " << i << "\n";
+      forward_prop(cache);
+      testMatOperation(new Matrix[]{cache.a[0], a_correct[0]}, "sample test activations 0", epsilon);
+      testMatOperation(new Matrix[]{cache.a[1], a_correct[1]}, "test activations 1", epsilon);
+      testMatOperation(new Matrix[]{cache.a[2], a_correct[2]}, "test activations 2", epsilon);
+
+      back_prop(cache);
+      testMatOperation(new Matrix[]{cache.dB[2], dB_correcti[2]}, "test dB 2", epsilon);
+      testMatOperation(new Matrix[]{cache.dW[2], dW_correcti[2]}, "test dW 2", epsilon);
+      testMatOperation(new Matrix[]{cache.dB[1], dB_correcti[1]}, "test dB 1", epsilon);
+      testMatOperation(new Matrix[]{cache.dW[1], dW_correcti[1]}, "test dW 1", epsilon);
+      testMatOperation(new Matrix[]{cache.dB[0], dB_correcti[0]}, "test dB 0", epsilon);
+      testMatOperation(new Matrix[]{cache.dW[0], dW_correcti[0]}, "test dW 0", epsilon);
+
+
+    }
+  }
 }
 
 int main(void) {
