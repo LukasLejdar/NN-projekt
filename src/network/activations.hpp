@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <math.h>
+#include <stdexcept>
 
 inline void relu(float v[], size_t length) {
   for(size_t i = 0; i < length; i++) {
@@ -27,7 +28,9 @@ inline void sigmoid(float v[], size_t length) {
 
 inline void softmax(float v[], size_t length) {
   float sum = 0;
+  float max = *std::max_element(v, v + length);
   for(size_t i = 0; i < length; i++) {
+    v[i] -= max;
     v[i] = exp(v[i]);
     sum += v[i];
   }
@@ -36,12 +39,8 @@ inline void softmax(float v[], size_t length) {
   }
 }
 
-inline float crossEntropy(float *v, float *y, size_t length) {
-  float sum = 0;
-  for(size_t i = 0; i < length; i++) {
-    sum -= y[i]*log(v[i]);
-  }
-  return sum;
+inline float crossEntropy(float *v, size_t y) {
+  return -log(v[y] + 0.00000001);
 }
 
 #endif
