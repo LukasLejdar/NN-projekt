@@ -1,84 +1,16 @@
 #include <algorithm>
 #include <assert.h>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <math.h>
 #include <new>
 #include <stdio.h>
 #include <tuple>
+#include "tensor.hpp"
+
 #ifndef MATH_H
 #define MATH_H
-
-/// m[x][y] = v[x*width+y]
-template<class T>
-class MatrixT {
-  public:
-    size_t ht;
-    size_t wt;
-    T* v;
-
-    MatrixT(): ht(0), wt(0), v(nullptr) {}
-
-    MatrixT(const MatrixT &other): ht(other.ht), wt(other.wt){
-      //std::cout << "copy MatrixT " << ht << " - " << wt << "\n"; 
-      v = new T[ht*wt];
-      std::copy(other.v, other.v+ht*wt, v);
-    }
-
-    MatrixT(size_t ht, size_t wt, float* v_): ht(ht), wt(wt) {
-      //std::cout << "matric initializer " << ht << " - " << wt << "\n";
-      v = new T[ht*wt];
-      std::copy(v_, v_+ht*wt, v);
-    }
-
-    MatrixT(size_t ht, size_t wt): ht(ht), wt(wt) {
-      //std::cout << "matrix empty initializer " << ht << " - " << wt << "\n";
-      v = new T[ht*wt];
-      std::fill(v, v+ht*wt, 0);
-    }
-
-    ~MatrixT() {
-      //std::cout << "delete mat " << ht << " - " << wt << "\n";
-      delete [] v;
-    }
-
-    void setV(const T _v[]) {
-      std::copy(_v, _v+ht*wt, v);
-    }
-
-    void faltten() {
-      ht = ht*wt;
-      wt = 1;
-    }
-
-    void swap(MatrixT& other) {
-      std::swap(other.ht, ht);
-      std::swap(other.wt, wt);
-      std::swap(other.v, v);
-    }
-
-    T* operator[](int p) { return &(v[p*wt]); }
-    MatrixT& operator*(float scaler) {
-      for(size_t i = 0; i < ht*wt; i++) v[i] *= scaler;
-      return *this;
-    }
-
-    MatrixT& operator=(const MatrixT& other) {
-      //std::cout << "const assignment " << other.ht << " - " << other.wt << "\n";
-      MatrixT temp(other);
-      swap(temp);
-      return *this;
-    }
-
-    MatrixT& operator=(MatrixT& other) {
-      //std::cout << "non const assignment " << ht << " - " << wt << "\n"; 
-      MatrixT temp(other);
-      swap(temp);
-      return *this;
-    }
-};
-
-typedef MatrixT<float> Matrix;
 
 void printMat(Matrix& m, char separator='\0');
 void drawMat(Matrix& m, float sensitivity = 1);
@@ -121,6 +53,43 @@ inline void matMul(Matrix& left, Matrix& right, Matrix& result) {
       }
     }
   }  
+}
+
+template<size_t tileSize>
+void correlate(Matrix& input, Matrix& kernel, Matrix& result) {
+  assert(input.ht - kernel.ht + 1 == result.ht);
+  assert(input.wt - kernel.wt + 1 == result.wt);
+
+  zeroMat(result);
+
+  for(size_t i = 0; i < input.ht; i++) {
+    for(size_t j = 0; j < input.wt; j++) {
+      for(size_t k = fmax(0, i-result.ht+1); k < fmin(kernel.ht, i+1); k++) {
+        for(size_t l = fmax(0, j-result.wt+1); l < fmin(kernel.wt, j+1); l++) {
+          result.v[(i-k)*result.wt+j-l] += input.v[i*input.wt+j]* kernel.v[k*kernel.wt+l];
+        }
+      }
+    }
+  }
+
+}
+
+template<size_t tileSize, bool zero=true>
+void convolveFull(Matrix& input, Matrix& kernel, Matrix& result) {
+  assert(input.ht + kernel.ht -1 == result.ht);
+  assert(input.wt + kernel.wt -1 == result.wt);
+
+  zeroMat(result);
+
+  for(size_t i = 0; i < result.ht; i++) {
+    for(size_t j = 0; j < result.wt; j++) {
+      for(size_t k = fmax(0, i-input.ht+1); k < fmin(kernel.ht, i+1); k++) {
+        for(size_t l = fmax(0, j-input.wt+1); l < fmin(kernel.wt, j+1); l++) {
+          result.v[i*result.wt + j] += input.v[(i-k)*input.wt +j -l]* kernel.v[k*kernel.wt+l];
+        }
+      }
+    }
+  }
 }
 
 ///matrixVector multiplication
