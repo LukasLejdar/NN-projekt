@@ -1,14 +1,15 @@
 #include "layer.hpp"
-#include "math.hpp"
 
-Dense::Dense(const Dense& other): in_shape(other.in_shape), out_shape(other.out_shape) {
-  w = other.w;
-  b = other.b;
-  emaW = other.emaW;
-  emaB = other.emaB;
-  maW = other.maW;
-  maB = other.maB;
-}
+Dense::Dense(const Dense& other): 
+  in_shape(other.in_shape), 
+  out_shape(other.out_shape),
+  w(other.w),
+  maW(other.maW),
+  emaW(other.emaW),
+  b(other.b),
+  maB(other.maB),
+  emaB(other.emaB)
+{}
 
 Dense::Dense(size_t in_shape, size_t out_shape): 
   in_shape(in_shape), 
@@ -18,18 +19,27 @@ Dense::Dense(size_t in_shape, size_t out_shape):
   emaW(Matrix(out_shape, in_shape)),
   emaB(Matrix(out_shape, 1)),
   maW(Matrix(out_shape, in_shape)),
-  maB(Matrix(out_shape, 1)) {}
+  maB(Matrix(out_shape, 1)) 
+{}
 
-//void Dense::swap(Dense& other) {
-//    std::swap(in_shape, other.in_shape);
-//    std::swap(out_shape, other.out_shape);
-//    w.swap(other.w);
-//    b.swap(other.b);
-//  }
-//
-//Dense& Dense::operator=(const Dense& other) {
-//  Dense temp(other);
-//  swap(temp);
-//  return *this;
-//}
+Convolutional::Convolutional(const Convolutional& other): 
+  in_shape(other.in_shape), 
+  out_shape(other.out_shape),
+  k(other.k),
+  maK(other.maK),
+  emaK(other.emaK),
+  b(other.b),
+  maB(other.maB),
+  emaB(other.emaB)
+{}
 
+Convolutional::Convolutional(Shape<3> in_shape, Shape<4> ker_shape):
+  in_shape(in_shape),
+  out_shape(ker_shape[0], in_shape[1], in_shape[2]),
+  k(ker_shape),
+  maK(ker_shape),
+  emaK(ker_shape),
+  b(out_shape),
+  maB(out_shape),
+  emaB(out_shape)
+{}

@@ -64,7 +64,6 @@ void benchMatMul() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 8: %0.3f ms \n");
   matMul<8>(list[0], list[1], list[2]);
-
 }
 
 void benchMatMul1() {
@@ -91,22 +90,38 @@ void benchMatMul4() {
   matMul<128>(list[0], list[1], list[2]);
 }
 
-void benchMatMulScalerm1() {
-  Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul with scaler -1: %0.3f ms \n");
-  matMul<8, -1>(list[0], list[1], list[2]);
+void benchCorrelate() {
+  Matrix list[] = {
+    {1024, 1024},
+    {30, 30},
+    {1024-29, 1024-29}
+  };
+  randomizeMat(list[0]);
+  randomizeMat(list[1]);
+  randomizeMat(list[2]);
+
+  Timer timer = Timer("bench correlate: %0.3f ms \n");
+  correlate<8>(list[0], list[1], list[2]);
+}
+
+void benchConv() {
+  Matrix list[] = {
+    {1024-29, 1024-29},
+    {30, 30},
+    {1024, 1024},
+  };
+  randomizeMat(list[0]);
+  randomizeMat(list[1]);
+  randomizeMat(list[2]);
+
+  Timer timer = Timer("bench convolve: %0.3f ms \n");
+  convolveFull<8>(list[0], list[1], list[2]);
 }
 
 void benchMatMulScaler1() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul with scaler 1: %0.3f ms \n");
   matMul<8, 1>(list[0], list[1], list[2]);
-}
-
-void benchMatMulScaler6() {
-  Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMul with scaler 6: %0.3f ms \n");
-  matMul<8, 6>(list[0], list[1], list[2]);
 }
 
 void benchMatMulABT() {
@@ -163,12 +178,12 @@ int main(void) {
 
   std::cout << "\n";
   benchMatMulScaler1();
-  benchMatMulScalerm1();
-  benchMatMulScaler6();
-
-  std::cout << "\n";
   benchMatMulABT();
   benchMatMulATB();
+
+  std::cout << "\n";
+  benchCorrelate();
+  benchConv();
 
   std::cout << "\n";
   benchTranspose0();

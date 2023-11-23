@@ -5,17 +5,23 @@
 #include "math.hpp"
 
 struct Dense {
-  size_t in_shape, out_shape;
-  Matrix w;
-  Matrix b;
-  Matrix emaW, emaB; // moving averages
-  Matrix maW, maB;
+  const size_t in_shape, out_shape;
+  const Matrix w, maW, emaW; //moving averages
+  const Matrix b, maB, emaB; 
 
-  Dense(): in_shape(0), out_shape(0), w({}), b({}), emaW({}), emaB({}), maW({}), maB({}) {}
   Dense(const Dense& other);
   Dense(size_t in_shape, size_t out_shape);
-  //void swap(Dense& other);
-  //Dense& operator=(const Dense& other);
+};
+
+struct Convolutional {
+  public:
+    const Shape<3> in_shape;
+    const Shape<3> out_shape;    
+    const Tensor<4> k, maK, emaK;
+    const Tensor<3> b, maB, emaB;
+
+    Convolutional(const Convolutional& other);
+    Convolutional(Shape<3> in_shape, Shape<4> ker_shape);
 };
 
 #endif

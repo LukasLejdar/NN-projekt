@@ -9,7 +9,7 @@
 #include <tuple>
 #include "math.hpp"
 
-void printMat(Matrix& mat, char separator) {
+void printMat(const Matrix& mat, char separator) {
   for(size_t x = 0; x < mat.ht; x++) {
     for(size_t y = 0; y < mat.wt; y++) {
       printf("%6.4lf%c ", mat[x][y], separator);
@@ -21,7 +21,7 @@ void printMat(Matrix& mat, char separator) {
 static int GRAYSCALE_LENGTH = 11;
 static char* grayscale=(char*) " .:-=+*#%@@";
 
-void drawMat(Matrix &mat, float sensitivity) {
+void drawMat(const Matrix &mat, float sensitivity) {
   for(size_t x = 0; x < mat.ht; x++) {
     for(size_t y = 0; y < mat.wt; y++) {
       if(mat[x][y] != mat[x][y]) {
@@ -38,7 +38,7 @@ void drawMat(Matrix &mat, float sensitivity) {
 
 }
 
-std::tuple<float, float> getVarAndExp(Matrix &m) {
+std::tuple<float, float> getVarAndExp(const Matrix &m) {
     float mean = 0; float varience = 0;
     size_t size = m.wt*m.ht;
     for(size_t l = 0; l < size; l++) mean += m.v[l];
@@ -49,7 +49,7 @@ std::tuple<float, float> getVarAndExp(Matrix &m) {
     return std::tuple<float, float>(mean, varience);
 }
 
-void randomizeMat(Matrix& mat) {
+void randomizeMat(const Matrix& mat) {
   std::random_device rd;
   std::mt19937 generator(rd());
   std::normal_distribution<float> distribution(0, sqrt(2.0 / (mat.wt + mat.ht)));
@@ -60,11 +60,11 @@ void randomizeMat(Matrix& mat) {
   }
 }
 
-void zeroMat(Matrix &mat) {
+void zeroMat(const Matrix &mat) {
   std::fill(mat.v, mat.v+mat.ht*mat.wt, 0);
 }
 
-void copyMatricesOfSameSize(Matrix &from, Matrix &to) {
+void copyMatricesOfSameSize(const Matrix &from, const Matrix &to) {
   assert(from.ht*from.wt == to.ht*to.wt);
   std::copy(from.v, from.v+from.ht*from.wt, to.v);
 }

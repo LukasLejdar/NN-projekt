@@ -12,12 +12,12 @@
 #ifndef MATH_H
 #define MATH_H
 
-void printMat(Matrix& m, char separator='\0');
-void drawMat(Matrix& m, float sensitivity = 1);
-void randomizeMat(Matrix& m);
-void zeroMat(Matrix& m);
-void copyMatricesOfSameSize(Matrix& from, Matrix& to);
-std::tuple<float, float> getVarAndExp(Matrix& m);
+void printMat(const Matrix& m, char separator='\0');
+void drawMat(const Matrix& m, float sensitivity = 1);
+void randomizeMat(const Matrix& m);
+void zeroMat(const Matrix& m);
+void copyMatricesOfSameSize(const Matrix& from, const Matrix& to);
+std::tuple<float, float> getVarAndExp(const Matrix& m);
 
 template<size_t tileSize>
 inline void transpose(Matrix& a, Matrix& result) {
@@ -94,16 +94,16 @@ void convolveFull(Matrix& input, Matrix& kernel, Matrix& result) {
 
 ///matrixVector multiplication
 template<size_t tileSize, bool zero=true>
-inline void mulMatAvT(Matrix& left, Matrix& right, Matrix& result) {
+inline void mulMatAvT(const Matrix& left, Matrix& right, const Matrix& result) {
   assert(right.ht == 1 || right.wt == 1);
-  std::swap(right.ht, right.wt);
+  std::swap(right.shape.dimensions[0], right.shape.dimensions[1]);
   matMul<tileSize, zero>(left, right, result);
-  std::swap(right.ht, right.wt);
+  std::swap(right.shape.dimensions[0], right.shape.dimensions[1]);
 }
 
 
 template<size_t tileSize, bool zero=true>
-inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
+inline void matMulATB(const Matrix& left, const Matrix& right, Matrix& result) {
   size_t wt2 = left.wt; assert(result.ht == left.wt);
   size_t in = left.ht; assert(left.ht == right.ht);
   size_t wt = right.wt; assert(result.wt == right.wt);
@@ -124,7 +124,7 @@ inline void matMulATB(Matrix& left, Matrix& right, Matrix& result) {
 }
 
 template<size_t tileSize>
-inline void addMat(Matrix& m, Matrix& result, float scaler=1) {
+inline void addMat(const Matrix& m, const Matrix& result, float scaler=1) {
   size_t ht = m.ht; assert(m.ht == result.ht);
   size_t wt = m.wt; assert(m.wt == result.wt);
 
@@ -141,7 +141,7 @@ inline void addMat(Matrix& m, Matrix& result, float scaler=1) {
 
 
 template<size_t tileSize, int scaler1=1, int scaler2=1>
-inline void addMat(Matrix& m1, Matrix& m2, Matrix& result) {
+inline void addMat(const Matrix& m1, const Matrix& m2, const Matrix& result) {
   size_t ht = m1.ht; assert(m1.ht == result.ht && m2.ht == m1.ht);
   size_t wt = m1.wt; assert(m1.wt == result.wt && m2.wt == m1.wt);
 
@@ -156,7 +156,7 @@ inline void addMat(Matrix& m1, Matrix& m2, Matrix& result) {
   }
 }
 
-inline void adam(Matrix& dw, Matrix& ema, Matrix& ma, float learning_rate, float decay_rate1, float decay_rate2, size_t t) {
+inline void adam(const Matrix& dw, const Matrix& ema, const Matrix& ma, float learning_rate, float decay_rate1, float decay_rate2, size_t t) {
     assert(dw.wt == ema.wt && dw.ht == ema.ht);
 
     for(size_t i = 0; i < dw.ht*dw.wt; i++) {
