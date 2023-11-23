@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <assert.h>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
@@ -94,7 +92,7 @@ void convolveFull(Matrix& input, Matrix& kernel, Matrix& result) {
 
 ///matrixVector multiplication
 template<size_t tileSize, bool zero=true>
-inline void mulMatAvT(const Matrix& left, Matrix& right, const Matrix& result) {
+inline void mulMatAvT(Matrix& left, Matrix& right, Matrix& result) {
   assert(right.ht == 1 || right.wt == 1);
   std::swap(right.shape.dimensions[0], right.shape.dimensions[1]);
   matMul<tileSize, zero>(left, right, result);
@@ -157,9 +155,9 @@ inline void addMat(const Matrix& m1, const Matrix& m2, const Matrix& result) {
 }
 
 inline void adam(const Matrix& dw, const Matrix& ema, const Matrix& ma, float learning_rate, float decay_rate1, float decay_rate2, size_t t) {
-    assert(dw.wt == ema.wt && dw.ht == ema.ht);
+    assert(dw.size == ema.size && dw.size == ma.size);
 
-    for(size_t i = 0; i < dw.ht*dw.wt; i++) {
+    for(size_t i = 0; i < dw.size; i++) {
       ma.v[i] =  decay_rate1*ma.v[i] + (1-decay_rate1)*dw.v[i];
       ema.v[i] =  decay_rate2*ema.v[i] + (1-decay_rate2)*pow(dw.v[i], 2);
       ma.v[i] = ma.v[i] / (1 - pow(decay_rate1, t));

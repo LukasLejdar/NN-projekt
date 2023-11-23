@@ -43,18 +43,11 @@ void initialize_cache(Cache& cache, Dense layers[], size_t layers_count) {
   }
 }
 
-Net::Net(Dense _layers[], size_t length) {
+Net::Net(Dense _layers[], size_t length): layers(_layers) {
   layers_count = length;
-  layers = new Dense[length];
-  std::copy(_layers, _layers+length, layers);
-
-  mtx = new std::mutex[length];
-
-  for(size_t t = 0; t < NTHREADS; t++) {
-    initialize_cache(threadscache[t], _layers, layers_count);
-  }
-
-  for(size_t i = 0; i < length; i++) { randomizeMat(layers[i].w); }
+  mtx = new std::mutex[layers_count];
+  for(size_t t = 0; t < NTHREADS; t++) initialize_cache(threadscache[t], layers, layers_count);
+  for(size_t i = 0; i < layers_count; i++)  randomizeMat(layers[i].w);
 }
 
 //TODO: benchmark forwad_prop
@@ -208,7 +201,7 @@ float Net::test(MnistReader& reader) {
   Cache& cache = threadscache[0];
   size_t out_shape = layers[layers_count -1].out_shape;
   Matrix results = {out_shape, out_shape};
-  MatrixT<int> count = {out_shape, 1};
+  TensorT<int, 2> count = {out_shape, 1};
 
   int total_correct = 0;
 

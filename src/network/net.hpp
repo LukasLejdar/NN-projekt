@@ -7,7 +7,8 @@
 #include "../mnist_reader.hpp"
 #include "layer.hpp"
 
-#define NTHREADS 6
+#define NTHREADS 3
+
 
 struct Cache {
   size_t layers_count;
@@ -35,8 +36,6 @@ class Net {
     float decay_rate2 = 0.99;
 
     Net(Dense layers[], size_t length);
-
-    ~Net() { delete [] layers; }
 
     static void func();
     void train_epochs(MnistReader& reader, int epochs, MnistReader& test_reader);

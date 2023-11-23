@@ -50,11 +50,11 @@ void prepare_cache(Cache& cache, Matrix* a_correct, Matrix* dW_correct, Matrix* 
     -0.0366737, -0.0574024, -0.0127561, -0.0191341, -0.129155, 
     0, 0, 0, 0, 0
   };
-  cache.w[0] = Matrix(4, 5, w0);
-  cache.b[0] = Matrix(4, 1, b0);
-  a_correct[0] = Matrix(4, 1, a0_correct);
-  dB_correct[0] = Matrix(4, 1, dB0_correct);
-  dW_correct[0] = Matrix(4, 5, dW0_correct);
+  cache.w[0] = Matrix(w0,4, 5);
+  cache.b[0] = Matrix(b0,4, 1);
+  a_correct[0] = Matrix(a0_correct,4, 1);
+  dB_correct[0] = Matrix(dB0_correct,4, 1);
+  dW_correct[0] = Matrix(dW0_correct,4, 5);
 
   float w1[] = {
     0.34, -0.28, 0.19, -0.67,
@@ -81,11 +81,11 @@ void prepare_cache(Cache& cache, Matrix* a_correct, Matrix* dW_correct, Matrix* 
     0, 0, 0, 0, 
     -0.0058645, 0, -0.00336089, 0
   };
-  cache.w[1] = Matrix(3, 4, w1);
-  cache.b[1] = Matrix(3, 1, b1);
-  a_correct[1] = Matrix(3, 1, a1_correct);
-  dB_correct[1] = Matrix(3, 1, dB1_correct);
-  dW_correct[1] = Matrix(3, 4, dW1_correct);
+  cache.w[1] = Matrix(w1,3, 4);
+  cache.b[1] = Matrix(b1,3, 1);
+  a_correct[1] = Matrix(a1_correct,3, 1);
+  dB_correct[1] = Matrix(dB1_correct,3, 1);
+  dW_correct[1] = Matrix(dW1_correct,3, 4);
   
   float w2[] = {
     -1.14, -0.74, 0.24,
@@ -107,11 +107,11 @@ void prepare_cache(Cache& cache, Matrix* a_correct, Matrix* dW_correct, Matrix* 
     0.0858731, 0, 0.0213415, 
     -0.0858731, 0, -0.0213415
   };
-  cache.w[2] = Matrix(2, 3, w2);
-  cache.b[2] = Matrix(2, 1, b2);
-  a_correct[2] = Matrix(2, 1, a2_correct);
-  dB_correct[2] = Matrix(2, 1, dB2_correct);
-  dW_correct[2] = Matrix(2, 3, dW2_correct);
+  cache.w[2] = Matrix(w2,2, 3);
+  cache.b[2] = Matrix(b2,2, 1);
+  a_correct[2] = Matrix(a2_correct,2, 1);
+  dB_correct[2] = Matrix(dB2_correct,2, 1);
+  dW_correct[2] = Matrix(dW2_correct,2, 3);
 }
 
 void test_back_prop() {
@@ -152,8 +152,6 @@ void test_back_prop() {
       testMatOperation(new Matrix[]{cache.dW[1], dW_correcti[1]}, "test dW 1", epsilon);
       testMatOperation(new Matrix[]{cache.dB[0], dB_correcti[0]}, "test dB 0", epsilon);
       testMatOperation(new Matrix[]{cache.dW[0], dW_correcti[0]}, "test dW 0", epsilon);
-
-
     }
   }
 }
@@ -162,4 +160,5 @@ int main(void) {
   test_back_prop();
   return 0;
 }
+
 

@@ -388,7 +388,7 @@ int main(void) {
   testMatOperation(getMulTest1ATB(), "mulTestATB test 1");
   testMatOperation(getMulTest2ATB(), "mulTestATB test 2");
 
-  Tensor<float, 2> tensor(1,2);
+  TensorT<float, 2> tensor(1,2);
   std::cout << tensor.size << "\n"; 
 
 }

@@ -15,11 +15,11 @@ Dense::Dense(size_t in_shape, size_t out_shape):
   in_shape(in_shape), 
   out_shape(out_shape),
   w(Matrix(out_shape, in_shape)),
-  b(Matrix(out_shape, 1)),
-  emaW(Matrix(out_shape, in_shape)),
-  emaB(Matrix(out_shape, 1)),
   maW(Matrix(out_shape, in_shape)),
-  maB(Matrix(out_shape, 1)) 
+  emaW(Matrix(out_shape, in_shape)),
+  b(Matrix(out_shape, 1)),
+  maB(Matrix(out_shape, 1)),
+  emaB(Matrix(out_shape, 1))
 {}
 
 Convolutional::Convolutional(const Convolutional& other): 

@@ -32,12 +32,11 @@ struct Shape {
   size_t dimensions[dim];
   size_t size;
 
-  size_t depth = dimensions[dim-3];
-  size_t ht = dimensions[dim-2];
-  size_t wt = dimensions[dim-1];
+  const size_t& ht = *(dimensions+dim-2);
+  const size_t& wt = *(dimensions+dim-1);
 
   Shape(): dimensions{}, size(0) {} 
-  Shape(const Shape& other): size(other.size) {
+  Shape(const Shape& other): dimensions{}, size(other.size) {
     std::copy(other.dimensions, other.dimensions + dim, dimensions);
   }
 
@@ -47,6 +46,7 @@ struct Shape {
     size(multiply(dimensions, dim)) {} 
 
   void swap(Shape& other) {
+    std::swap(size, other.size);
     std::swap_ranges(dimensions, dimensions+dim, other.dimensions);
   }
 
@@ -71,10 +71,9 @@ struct TensorT {
   Shape<dim> shape;
 
   const size_t (&dimensions)[dim] = dimensions;
-  const size_t &size = shape.size;
-  const size_t &wt = shape.wt;
-  const size_t &ht = shape.ht;
-  const size_t &depth = shape.depth;
+  const size_t& size = shape.size;
+  const size_t& ht = *(shape.dimensions+dim-2);
+  const size_t& wt = *(shape.dimensions+dim-1);
 
   T* v;
   
