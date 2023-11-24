@@ -21,7 +21,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 
-inline size_t multiply(size_t* values, size_t count) {
+inline size_t multiply(const size_t* values, size_t count) {
   size_t result = 1;
   for (size_t i = 0; i < count; i++) result *= values[i];
   return result;
@@ -32,10 +32,7 @@ struct Shape {
   size_t dimensions[dim];
   size_t size;
 
-  const size_t& ht = *(dimensions+dim-2);
-  const size_t& wt = *(dimensions+dim-1);
-
-  Shape(): dimensions{}, size(0) {} 
+  Shape(): dimensions(), size(0) {} 
   Shape(const Shape& other): dimensions{}, size(other.size) {
     std::copy(other.dimensions, other.dimensions + dim, dimensions);
   }
@@ -70,7 +67,7 @@ struct TensorT {
 
   Shape<dim> shape;
 
-  const size_t (&dimensions)[dim] = dimensions;
+  const size_t* dimensions = shape.dimensions;
   const size_t& size = shape.size;
   const size_t& ht = *(shape.dimensions+dim-2);
   const size_t& wt = *(shape.dimensions+dim-1);
@@ -84,8 +81,10 @@ struct TensorT {
     std::copy(other.v, other.v+size, v);
   }
 
-  template<typename... Args, typename = std::enable_if_t<(sizeof...(Args) == dim)>>
-    TensorT(Args... args) : shape(args...), v(new T[size]) { 
+  template<typename... Args, typename = std::enable_if_t<(
+      sizeof...(Args) == dim && std::is_convertible_v<T, size_t>)>>
+    TensorT(Args... args) : shape(args...), v(nullptr) { 
+      v = new T[size];
       std::fill(v, v+size, 0); 
     }
 
@@ -93,8 +92,10 @@ struct TensorT {
     std::fill(v, v+size, 0); 
   }
 
-  template<typename... Args, typename = std::enable_if_t<sizeof...(Args) == dim>>
-    TensorT(float *other_v, Args... args) : shape(args...), v(new T[size]) { 
+  template<typename... Args, typename = std::enable_if_t<(
+      sizeof...(Args) == dim && std::is_convertible_v<T, size_t>)>>
+    TensorT(float *other_v, Args... args) : shape(args...), v(nullptr) { 
+      v = new T[size];
       std::copy(other_v, other_v+size, v); 
     }
 
@@ -112,6 +113,20 @@ struct TensorT {
     std::swap(other.v, v);
   }
 
+  void zero() {
+    std::fill(v, v+size, 0);
+  }
+
+  void randomize(float mean=0, float variance=0) const {
+    if(variance == 0) variance = 1.0f/ht;
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::normal_distribution<float> distribution(mean, std::sqrt(variance));
+
+    for(size_t i = 0; i < size; i++) v[i] = distribution(generator);
+  }
+
+
   template<typename S = const TensorT>
   typename std::enable_if<(S::_dim == 1), T>::type
   const operator[](int index) const {
@@ -126,12 +141,12 @@ struct TensorT {
 
   template<typename S = const TensorT>
   typename std::enable_if<(S::_dim > 2), TensorT<T, dim-1>>::type
-  const operator[](size_t index) const {
-    TensorT<T, dim-1> tensor(true);
-    std::copy(dimensions+1, dimensions+dim-1, tensor.dimensions);
-    tensor.v = &v[index*dimensions[0]];
+  operator[](size_t index) {
+    TensorT<T, dim-1> new_tensor(true);
+    std::copy(shape.dimensions+1, shape.dimensions+dim, new_tensor.shape.dimensions);
+    new_tensor.v = &v[index*multiply(shape.dimensions+1, dim-1)];
 
-    return tensor;
+    return new_tensor;
   }
 
   TensorT& operator*(float scaler) {
@@ -163,4 +178,5 @@ template <size_t dim>
 using Tensor = TensorT<float, dim>;
 
 typedef TensorT<float, 2> Matrix;
+
 #endif

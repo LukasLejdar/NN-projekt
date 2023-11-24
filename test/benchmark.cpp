@@ -38,13 +38,14 @@ class Timer {
 };
 
 Matrix* getMulTest1() {
-  size_t size = 1024; 
+  size_t size1 = 2000; 
+  size_t size2 = 12000;
   Matrix* list = new Matrix[]{
-    {size, size}, 
-    {size, size}, 
-    {size, size}};
-  randomizeMat(list[0]);
-  randomizeMat(list[1]);
+    {size2, size1}, 
+    {size1, 1}, 
+    {size2, 1}};
+  list[0].randomize();
+  list[1].randomize();;
   return list;
 }
 
@@ -55,68 +56,73 @@ Matrix* getMulTest2() {
     {ht, wt}, 
     {wt, ht}, 
     {wt, ht}};
-  randomizeMat(list[0]);
-  randomizeMat(list[1]);
+  list[0].randomize();
+  list[1].randomize();
   return list;
 }
 
+Matrix* getMulTest3() {
+  size_t size = 1024; 
+  Matrix* list = new Matrix[]{
+    {size, size}, 
+    {size, size}, 
+    {size, size}};
+  list[0].randomize();
+  list[1].randomize();;
+  return list;
+}
 void benchMatMul() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 8: %0.3f ms \n");
-  matMul<8>(list[0], list[1], list[2]);
+  matMulAv<8>(list[0], list[1], list[2]);
 }
 
 void benchMatMul1() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 16: %0.3f ms \n");
-  matMul<16>(list[0], list[1], list[2]);
+  matMulAv<16>(list[0], list[1], list[2]);
 }
 
 void benchMatMul2() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 32: %0.3f ms \n");
-  matMul<32>(list[0], list[1], list[2]);
+  matMulAv<32>(list[0], list[1], list[2]);
 }
 
 void benchMatMul3() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 64: %0.3f ms \n");
-  matMul<64>(list[0], list[1], list[2]);
+  matMulAv<64>(list[0], list[1], list[2]);
 }
 
 void benchMatMul4() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMul 128: %0.3f ms \n");
-  matMul<128>(list[0], list[1], list[2]);
+  matMulAv<128>(list[0], list[1], list[2]);
 }
 
 void benchCorrelate() {
-  Matrix list[] = {
-    {1024, 1024},
-    {30, 30},
-    {1024-29, 1024-29}
-  };
-  randomizeMat(list[0]);
-  randomizeMat(list[1]);
-  randomizeMat(list[2]);
+  Tensor<4> kernels(50,10,30,30);
+  Tensor<3> input(10,1024, 1024);
+  Tensor<3> result(50,1024-29,1024-29);
+  kernels.randomize(0, 1.0/30);
+  input.randomize(0, 1);
 
   Timer timer = Timer("bench correlate: %0.3f ms \n");
-  correlate<8>(list[0], list[1], list[2]);
+  correlateAv<8>(kernels, input, result);
 }
 
 void benchConv() {
-  Matrix list[] = {
-    {1024-29, 1024-29},
-    {30, 30},
-    {1024, 1024},
-  };
-  randomizeMat(list[0]);
-  randomizeMat(list[1]);
-  randomizeMat(list[2]);
+  Tensor<4> kernels(50,10,30,30);
+  Tensor<3> input(50,1024-29,1024-29);
+  Tensor<3> result(10,1024, 1024);
+  kernels.randomize();
+  result.randomize();
 
   Timer timer = Timer("bench convolve: %0.3f ms \n");
-  convolveFull<8>(list[0], list[1], list[2]);
+  convolveATv<8>(kernels, input, result);
 }
+
 
 void benchMatMulScaler1() {
   Matrix* list = getMulTest1();
@@ -127,18 +133,17 @@ void benchMatMulScaler1() {
 void benchMatMulABT() {
   Matrix* list = getMulTest1();
   Timer timer = Timer("bench matMulABT: %0.3f ms \n");
-  transpose<8>(list[2], list[1]);
   matMul<8>(list[0], list[1], list[2]);
 }
 
-void benchMatMulATB() {
+void benchMatMulATv() {
   Matrix* list = getMulTest1();
-  Timer timer = Timer("bench matMulATB: %0.3f ms \n");
-  matMulATB<8>(list[0], list[1], list[2]);
+  Timer timer = Timer("bench matMulATv: %0.3f ms \n");
+  matMulATv<8>(list[0], list[2], list[1]);
 }
 
 void benchTranspose0() {
-  Matrix* list = getMulTest1();
+  Matrix* list = getMulTest3();
   Timer timer = Timer("bench transpose square matrix: %0.3f ms \n");
   transpose<8>(list[0], list[2]);
 }
@@ -156,15 +161,15 @@ void benchTranspose2() {
 }
 
 void benchAddMat() {
-  Matrix* list = getMulTest1();
+  Matrix* list = getMulTest3();
   Timer timer = Timer("bench add matricies: %0.3f ms \n");
   addMat<8>(list[1], list[0]);
 }
 
 void benchZeroMat() {
-  Matrix* list = getMulTest1();
+  Matrix* list = getMulTest3();
   Timer timer = Timer("bench zero mat: %0.3f ms \n");
-  zeroMat(list[0]);
+  list[0].zero();
   timer.stop();
 }
 
@@ -179,7 +184,7 @@ int main(void) {
   std::cout << "\n";
   benchMatMulScaler1();
   benchMatMulABT();
-  benchMatMulATB();
+  benchMatMulATv();
 
   std::cout << "\n";
   benchCorrelate();

@@ -49,21 +49,6 @@ std::tuple<float, float> getVarAndExp(const Matrix &m) {
     return std::tuple<float, float>(mean, varience);
 }
 
-void randomizeMat(const Matrix& mat) {
-  std::random_device rd;
-  std::mt19937 generator(rd());
-  std::normal_distribution<float> distribution(0, sqrt(2.0 / (mat.wt + mat.ht)));
-
-  for(size_t i = 0; i < mat.wt*mat.ht; i++) {
-    mat.v[i] = distribution(generator);
-    //mat.v[i] = rand() % 5 - 2;
-  }
-}
-
-void zeroMat(const Matrix &mat) {
-  std::fill(mat.v, mat.v+mat.ht*mat.wt, 0);
-}
-
 void copyMatricesOfSameSize(const Matrix &from, const Matrix &to) {
   assert(from.ht*from.wt == to.ht*to.wt);
   std::copy(from.v, from.v+from.ht*from.wt, to.v);
