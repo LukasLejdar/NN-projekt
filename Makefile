@@ -1,4 +1,4 @@
-OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math
+OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math 
 CFLAGS=-Wall -Wextra -pedantic -ggdb 
 CC=g++
 
@@ -11,11 +11,11 @@ _parallelism: ./test/parallelism.cpp
 
 _test: ./test/test.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS) -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp
+	$(CC) $(CFLAGS)  -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp
 
 _benchmark: ./test/benchmark.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
+	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -DNDEBUG -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
 
 _net: ./src/main.cpp
 	mkdir -p build

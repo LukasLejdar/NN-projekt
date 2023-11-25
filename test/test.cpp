@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include "test.hpp"
 #include "../src/network/math.hpp"
@@ -161,12 +162,13 @@ Matrix* getMulTest0ATv() {
   float v1[] = {
     2,
     0};
-  Matrix m1(v1,2,1);
+  Vector m1(v1,2);
   float correct[]{
     2,
     6};
   Matrix* list = new Matrix[]{{2,1}, {correct,2,1}};
-  matMulATv<8>(m0, m1, list[0]);
+  Vector result = list[0].vectorize();
+  matMulATv(m0, m1, result);
   return list;
 } 
 
@@ -180,13 +182,14 @@ Matrix* getMulTest1ATv() {
     3, 
     1, 
     0};
-  Matrix m1(v1,3,1);
+  Vector m1(v1,3);
   float correct[] = {
     5, 
     3, 
     7};
   Matrix* list = new Matrix[]{{3,1}, {correct,3,1}};
-  matMulATv<8>(m0, m1, list[0]);
+  Vector result = list[0].vectorize();
+  matMulATv(m0, m1, result);
   return list;
 }
 
@@ -198,13 +201,14 @@ Matrix* getMulTest2ATv() {
   float v1[] = {
     2,
     1};
-  Matrix m1(v1,2,1);
+  Vector m1(v1,2);
   float correct[]{
     5,
     8,
     10};
   Matrix* list = new Matrix[]{{3,1}, {correct,3,1}};
-  matMulATv<8>(m0, m1, list[0]);
+  Vector result = list[0].vectorize();
+  matMulATv(m0, m1, result);
   return list;
 } 
 
@@ -212,17 +216,17 @@ Matrix* getMulTest0vvT() {
   float v0[] = { 
     3, 
     2};
-  Matrix m0(v0,2,1);
+  Vector m0(v0,2);
   float v1[] = { 
     1, 
     0, 
     2};
-  Matrix m1(v1,3,1);
+  Vector m1(v1,3);
   float correct[] = {
     3, 0, 6,
     2, 0, 4};
   Matrix * list = new Matrix[]{{2,3}, {correct,2,3}};
-  matMulvvT<8>(m0, m1, list[0]);
+  matMulvvT(m0, m1, list[0]);
   return list;
 }
 
@@ -259,7 +263,7 @@ Matrix* getCorrelateTest0() {
     16, 0
   };
   Tensor<3> result(2,2,2);
-  correlateAv<8>(t0, t1, result);
+  correlateAv(t0, t1, result);
   Matrix* list = new Matrix[]{{result.v, 2,4}, {correct,2,4}};
   return list;
 }
@@ -307,7 +311,7 @@ Matrix* getCorrelateTest1() {
     24, 0, 3,
   };
   Tensor<3> result(2,2,3);
-  correlateAv<8>(t0, t1, result);
+  correlateAv(t0, t1, result);
   Matrix* list = new Matrix[]{{result.v,2,6}, {correct,2,6}};
   return list;
 }
@@ -354,7 +358,7 @@ Matrix* getCorrelateTest2() {
     8, 0, 1,
   };
   Tensor<4> result(3,2,2,3);
-  correlatevvT<8>(t0, t1, result);
+  correlatevvT(t0, t1, result);
   Matrix* list = new Matrix[]{{result.v,6,6}, {correct,6,6}};
   return list;
 }
@@ -416,7 +420,7 @@ Matrix* getConvolveTest0() {
     0,  3,  0,  9,  0, -12
   };
   Tensor<3> result(2,5,6);
-  convolveATv<8>(t0, t1, result);
+  convolveATv(t0, t1, result);
   return new Matrix[]{{result.v,5,6}, {correct,5,6}};
 }
 
@@ -435,9 +439,94 @@ Matrix* getAddTest() {
     0, 3, 4,
     3, 3, 9};
   Matrix * list = new Matrix[]{{result,3,3}, {correct,3,3}};
-  addMat<8>(m, list[0]);
+  addTens(m, list[0]);
   return list;
 }
+
+Matrix* getMaxpoolingTest0() {
+  float v[] = {
+    1,2,3,4,9,
+    2,3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+             
+    1,2,3,4,9,
+    2,3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+             
+    1,2,3,4,9,
+    2,3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+  };
+  Tensor<3> t(v, 3,4,5);
+  Tensor<3> result(3,2,2);
+  float correct[] = {
+    3,5,
+    8,9,
+
+    3,5,
+    8,9,
+
+    3,5,
+    8,9,
+  };
+  Shape<2> kernel(2,2);
+  TensorT<size_t, 3> max_locations(3,2,2);
+  maxPooling(t, kernel, result, max_locations);
+  Matrix * list = new Matrix[]{{result.v,3,4}, {correct,3,4}};
+
+  maxPooling_backward(result, t, max_locations);
+  printMat(t[0]);
+  std::cout << "\n";
+  printMat(t[1]);
+  std::cout << "\n";
+  printMat(t[2]);
+  std::cout << "\n";
+
+  return list;
+}
+
+Matrix* getMaxpoolingTest1() {
+  float v[] = {
+    1,2,3,4,
+    2,3,4,5,
+    5,6,7,8,
+    7,8,9,0,
+
+    1,2,3,4,
+    2,3,4,5,
+    5,6,7,8,
+    7,8,9,0,
+
+    1,2,3,4,
+    2,3,4,5,
+    5,6,7,8,
+    7,8,9,0,
+  };
+  Tensor<3> t(v, 3,4,4);
+  Tensor<3> result(3,2,2);
+  float correct[] = {
+    5,7,
+    13,14,
+
+    21,23,
+    29,30,
+
+    37,39,
+    45,46,
+  };
+  Shape<2> kernel(2,2);
+  TensorT<size_t, 3> max_locations(3,2,2);
+  Tensor<3> res(3,2,2);
+  maxPooling(t, kernel, result, max_locations);
+  for(size_t i = 0; i < res.size; i++) res.v[i] = max_locations.v[i];
+  Matrix * list = new Matrix[]{{res.v ,3,4}, {correct ,3,4}};
+
+ return list;
+}
+
 
 int main(void) {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
@@ -465,9 +554,7 @@ int main(void) {
   testMatOperation(getMulTest1ATv(), "mulTestATv test 1");
   testMatOperation(getMulTest2ATv(), "mulTestATv test 2");
   testMatOperation(getMulTest0vvT(), "mulTestvvT test0");
-
-  TensorT<float, 2> tensor(1,2);
-  std::cout << tensor.size << "\n"; 
-
+  testMatOperation(getMaxpoolingTest0(), "maxpooling test");
+  testMatOperation(getMaxpoolingTest1(), "maxpooling test indicies");
 }
 

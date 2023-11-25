@@ -9,6 +9,11 @@
 #include <tuple>
 #include "math.hpp"
 
+void printVec(const Vector& vec, char separator) {
+  for(size_t i = 0; i < vec.size; i++) printf("%6.4lf%c ", vec[i], separator);
+  std::cout << "\n";
+}
+
 void printMat(const Matrix& mat, char separator) {
   for(size_t x = 0; x < mat.ht; x++) {
     for(size_t y = 0; y < mat.wt; y++) {
@@ -36,17 +41,6 @@ void drawMat(const Matrix &mat, float sensitivity) {
     std::cout << "\n";
   }
 
-}
-
-std::tuple<float, float> getVarAndExp(const Matrix &m) {
-    float mean = 0; float varience = 0;
-    size_t size = m.wt*m.ht;
-    for(size_t l = 0; l < size; l++) mean += m.v[l];
-    mean /= size;
-    for(size_t l = 0; l < size; l++) varience += pow(m.v[l] - mean, 2);
-    varience /= size;
-    
-    return std::tuple<float, float>(mean, varience);
 }
 
 void copyMatricesOfSameSize(const Matrix &from, const Matrix &to) {
