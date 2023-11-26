@@ -5,10 +5,6 @@ CC=g++
 all: _test _benchmark _net _test_backprop _paralelism _net_debug
 	mkdir -p build
 
-_parallelism: ./test/parallelism.cpp
-	mkdir -p build
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/parallelism ./test/parallelism.cpp ./src/network/math.cpp
-
 _test: ./test/test.cpp
 	mkdir -p build
 	$(CC) $(CFLAGS)  -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp

@@ -7,11 +7,11 @@
 #include "layer.hpp"
 #include "../mnist_reader.hpp"
 
-#define NTHREADS 8
+#define NTHREADS 1
 
 class Net {
   public:
-    size_t mini_batch = 64;
+    size_t mini_batch = 1;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
@@ -25,8 +25,9 @@ class Net {
   private:
     std::mutex* dense_mtx;
     std::mutex* conv_mtx;
+
     Model& model;
-    Cache threadscache[NTHREADS];
+    Cache threadscache[NTHREADS+1];
 
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
     void apply_gradient(Cache& cache, size_t t);
@@ -34,6 +35,6 @@ class Net {
 
 Vector& forward_prop(Cache& cache);
 void back_prop(Cache& cache);
-void zeroDerivatives(Cache& cache);
+void zeroGradients(Cache& cache);
 
 #endif

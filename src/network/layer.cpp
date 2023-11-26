@@ -69,9 +69,9 @@ Model::Model(size_t conv_count, Convolutional* conv_layers, size_t dense_count, 
     assert(conv_layers[conv_count-1].out_shape.wt == conv_layers[conv_count-1].e_shape.wt / conv_layers[conv_count-1].pooling.wt );
     assert(conv_layers[conv_count-1].out_shape.size == dense_layers[0].in_shape.size);
 
-    for(size_t i = 0; i < dense_count-1; i++)
+    for(size_t i = 0; i < dense_count-1; i++) {
       assert(dense_layers[i].out_shape == dense_layers[i+1].in_shape);
-    
+    }
 }
 
 
@@ -123,13 +123,47 @@ void initialize_cache(Cache& cache, Model& model) {
   cache.conv.dOut[cache.conv.count-1].vectorize(cache.dense.dA[-1]);
 }
 
+void Model::randomize() const {
+  for(size_t i = 0; i < dense_count; i++) dense_layers[i].randomize();
+  for(size_t i = 0; i < conv_count; i++) conv_layers[i].randomize();
+}
+
 void Dense::randomize() const { 
   ::randomize(w, 0, 2.0/(w.ht + w.wt));
-  //::randomize(b, 0, 2.0/(w.ht + w.wt));
 };
 
 void Convolutional::randomize() const { 
   ::randomize(k, 0, 2.0/(k.ht + k.wt));
-  //::randomize(b, 0, 2.0/(k.ht + k.wt));
+}
+
+void drawConv(Cache& cache) {
+  std::cout << "\nout -1" << "\n";
+  draw3D(cache.conv.out[-1]);
+
+  for(size_t i = 0; i < cache.conv.count; i++) {
+    std::cout << "\nk " << i << "\n";
+    drawKernels(cache.conv.k[i]);
+
+    std::cout << "\ndK " << i << "\n";
+    drawKernels(cache.conv.dK[i]);
+
+    std::cout << "\nb " << i << "\n";
+    draw3D(cache.conv.b[i]);
+
+    std::cout << "\ndB " << i << "\n";
+    draw3D(cache.conv.dB[i]);
+
+    std::cout << "\na " << i << "\n";
+    draw3D(cache.conv.a[i]);
+
+    std::cout << "\ndA " << i << "\n";
+    draw3D(cache.conv.dA[i]);
+
+    std::cout << "\nout " << i << "\n";
+    draw3D(cache.conv.out[i]);
+
+    std::cout << "\ndOut " << i << "\n";
+    draw3D(cache.conv.dOut[i]);
+  }
 }
 

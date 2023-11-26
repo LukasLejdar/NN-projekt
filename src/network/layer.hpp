@@ -3,6 +3,7 @@
 #define LAYER_H 
 
 #include "math.hpp"
+#include <mutex>
 
 struct Dense {
   const Shape<1> out_shape, in_shape;
@@ -37,6 +38,8 @@ struct Model {
 
   const Convolutional* conv_layers;
   const Dense* dense_layers;
+
+  void randomize() const;
 
   Model(size_t conv_count, Convolutional* conv_layers, size_t dense_count, Dense* dense_layers);
 };
@@ -82,5 +85,7 @@ struct Cache {
 };
 
 void initialize_cache(Cache &cache, Model &model);
+
+void drawConv(Cache& cache);
 
 #endif

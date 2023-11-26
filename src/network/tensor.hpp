@@ -172,7 +172,6 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
   }
 
   TensorT& operator=(TensorT& other) {
-    other.is_subtensor;
     swap(other);
     return *this;
   }

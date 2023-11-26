@@ -38,10 +38,10 @@ void drawMat(const Matrix &mat) {
 }
 
 void drawKernels(const Tensor<4> &t) {
-  for (size_t x = 0; x < t.shape[0]; x++) {
-    for (size_t i = 0; i < t.ht; i++) {
-      for (size_t y = 0; y < t.shape[1]; y++) {
-        for (size_t j = 0; j < t.wt; j++) {
+  for (size_t y = 0; y < t.shape[1]; y++) {
+    for (size_t j = 0; j < t.wt; j++) {
+      for (size_t x = 0; x < t.shape[0]; x++) {
+        for (size_t i = 0; i < t.ht; i++) {
           if (t[x][y][i][j] != t[x][y][i][j]) {
             std::cout << "nan";
             continue;

@@ -2,162 +2,90 @@
 #include <assert.h>
 #include <cstdio>
 #include <iostream>
+#include "test.hpp"
 #include "../src/network/math.hpp"
 #include "../src/network/net.hpp"
-#include "test.hpp"
+#include "../src/network/activations.hpp"
 
-void prepare_cache(Cache& cache, Matrix* a_correct, Matrix* dW_correct, Matrix* dB_correct) { 
-  const size_t LENGTH = 3;
-  Dense layers[LENGTH] = {
-    {5,4},
-    {4,3},
-    {3,2}
-  };
+//params are expected to be one of the weights, biases, or kernels in cache
+template<size_t dim>
+Tensor<dim> get_true_grad(Cache& cache, Tensor<dim>& params) {
+  const Tensor<dim> true_dParams(params.shape);
+  const Tensor<dim> params_orig(params.shape);
+  copyToTensorOfSameSize(params, params_orig);
 
-  initialize_cache(cache, layers, LENGTH);
+  for(size_t i = 0; i < params.size; i++) {
+    copyToTensorOfSameSize(params_orig, params);
+    float e = 0.001;
+    params.v[i] += e;
 
-  float x[] = {0.23, 0.36, 0.08, 0.12, 0.81};
-  cache.a[-1].setV(x);
-  cache.y = 1;
+    forward_prop(cache);
+    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
 
-  float w0[] = {
-    -0.10, 0.32, -0.30, -0.57, 0.27,
-    -0.56, -0.07, -0.37, -0.75, 0.25,
-    0.63, 0.23, -0.20, 0.33, -0.00,
-    -0.41, -0.33, -0.12, -0.48, -0.28,
-  };
-  float b0[] = {
-    0.22,
-    -0.39,
-    0.00,
-    -0.02,
-  };
-  float a0_correct[] = {
-    0.4385,
-    0.0000,
-    0.2513,
-    0.0000
-  };
-  float dB0_correct[] = {
-    -0.317297, 
-    0.00, 
-    -0.159451, 
-    0.00
-  };
-  float dW0_correct[] = {
-    -0.0729783, -0.114227, -0.0253838, -0.0380756, -0.257011, 
-    0, 0, 0, 0, 0, 
-    -0.0366737, -0.0574024, -0.0127561, -0.0191341, -0.129155, 
-    0, 0, 0, 0, 0
-  };
-  cache.w[0] = Matrix(w0,4, 5);
-  cache.b[0] = Matrix(b0,4, 1);
-  a_correct[0] = Matrix(a0_correct,4, 1);
-  dB_correct[0] = Matrix(dB0_correct,4, 1);
-  dW_correct[0] = Matrix(dW0_correct,4, 5);
+    copyToTensorOfSameSize(params_orig, params);
+    params.v[i] -= e;
+    forward_prop(cache);
+    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
 
-  float w1[] = {
-    0.34, -0.28, 0.19, -0.67,
-    -0.03, -0.19, -0.55, 0.07,
-    0.69, 0.57, -0.95, 0.24,
-  };
-  float b1[] = {
-    0.06,
-    -0.90,
-    0.00,
-  };
-  float a1_correct[] = {
-    0.256837,
-    0.00,
-    0.063830,
-  };
-  float dB1_correct[] = {
-    -0.906085,
-    0.0,
-    -0.013374
-  };
-  float dW1_correct[] = {
-    -0.397318, 0, -0.227699, 0, 
-    0, 0, 0, 0, 
-    -0.0058645, 0, -0.00336089, 0
-  };
-  cache.w[1] = Matrix(w1,3, 4);
-  cache.b[1] = Matrix(b1,3, 1);
-  a_correct[1] = Matrix(a1_correct,3, 1);
-  dB_correct[1] = Matrix(dB1_correct,3, 1);
-  dW_correct[1] = Matrix(dW1_correct,3, 4);
-  
-  float w2[] = {
-    -1.14, -0.74, 0.24,
-    1.57, 0.00, 0.28,
-  };
-  float b2[] = {
-    0.00,
-    -0.01,
-  };
-  float a2_correct[] = {
-    0.3343488, 
-    0.6656511,
-  };
-  float dB2_correct[] = {
-    0.3343488, 
-    -0.3343488, 
-  };
-  float dW2_correct[] = {
-    0.0858731, 0, 0.0213415, 
-    -0.0858731, 0, -0.0213415
-  };
-  cache.w[2] = Matrix(w2,2, 3);
-  cache.b[2] = Matrix(b2,2, 1);
-  a_correct[2] = Matrix(a2_correct,2, 1);
-  dB_correct[2] = Matrix(dB2_correct,2, 1);
-  dW_correct[2] = Matrix(dW2_correct,2, 3);
-}
-
-void test_back_prop() {
-  float epsilon = 0.0001;
-  Cache cache;
-
-  Matrix *a_correct = new Matrix[3];
-  Matrix *dW_correct = new Matrix[3];
-  Matrix *dB_correct = new Matrix[3];
-
-  prepare_cache(cache, a_correct, dW_correct, dB_correct);
-
-  Matrix *dW_correcti = new Matrix[3];
-  Matrix *dB_correcti = new Matrix[3];
-
-  // minibatch of 10
-  for(size_t i = 0; i < 2; i++) {
-    zeroDerivatives(cache);
-    for(size_t i = 0; i < 5; i++) {
-
-      for(size_t l = 0; l < cache.layers_count; l++) {
-        dB_correcti[l] = dB_correct[l];
-        dW_correcti[l] = dW_correct[l];
-        dB_correcti[l] * (i+1);
-        dW_correcti[l] * (i+1);
-      }
-
-      std::cout << "\nprocessing sample " << i << "\n";
-      forward_prop(cache);
-      testMatOperation(new Matrix[]{cache.a[0], a_correct[0]}, "sample test activations 0", epsilon);
-      testMatOperation(new Matrix[]{cache.a[1], a_correct[1]}, "test activations 1", epsilon);
-      testMatOperation(new Matrix[]{cache.a[2], a_correct[2]}, "test activations 2", epsilon);
-
-      back_prop(cache);
-      testMatOperation(new Matrix[]{cache.dB[2], dB_correcti[2]}, "test dB 2", epsilon);
-      testMatOperation(new Matrix[]{cache.dW[2], dW_correcti[2]}, "test dW 2", epsilon);
-      testMatOperation(new Matrix[]{cache.dB[1], dB_correcti[1]}, "test dB 1", epsilon);
-      testMatOperation(new Matrix[]{cache.dW[1], dW_correcti[1]}, "test dW 1", epsilon);
-      testMatOperation(new Matrix[]{cache.dB[0], dB_correcti[0]}, "test dB 0", epsilon);
-      testMatOperation(new Matrix[]{cache.dW[0], dW_correcti[0]}, "test dW 0", epsilon);
-    }
+    true_dParams.v[i] = (entropy1 - entropy2) /(2*e);
   }
+  
+  copyToTensorOfSameSize(params_orig, params);
+  return true_dParams;
 }
 
-int main(void) {
-  test_back_prop();
+int main() {
+  MnistReader training_reader("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
+  MnistReader test_reader("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
+  training_reader.number_of_entries = 10;
+  test_reader.number_of_entries = 10;
+
+  const size_t CONV_LENGTH = 2;
+  Convolutional conv_layers[CONV_LENGTH] {
+    {{1,28,28}, {4,3,3}, {2,2}}, //input, kernel shape 
+    {{4,13,13}, {8,3,3}, {2,2}}, //input, kernel shape 
+  };
+
+  const size_t DENSE_LENGTH = 2;
+  Dense dense_layers[DENSE_LENGTH] = {
+    {200, 128},
+    {128, 10},
+  };
+
+  Model model(CONV_LENGTH, conv_layers, DENSE_LENGTH, dense_layers);
+  Net net(model);
+  net.train_epochs(training_reader, 1, test_reader);
+  training_reader.loop_to_beg();
+  training_reader.read_next();
+
+  Cache cache;
+  initialize_cache(cache, model);
+  net.prepare_cache(training_reader.last_read, training_reader.last_lable, cache);
+
+  float entropy = 0;
+  while (entropy < 0.1) {
+    forward_prop(cache);
+    back_prop(cache);
+    entropy = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+  }
+
+  //drawConv(cache);
+
+  for(size_t i = 0; i < CONV_LENGTH; i++) {
+    Tensor<3> true_dB = get_true_grad(cache, cache.conv.b[i]);
+    std::cout << "\ncalculated dB " << i << "\n";
+    draw3D(cache.conv.dB[i]);
+    std::cout << "\ntrue dB " << i << "\n";
+    draw3D(true_dB);
+
+    Tensor<4> true_dK = get_true_grad(cache, cache.conv.k[i]);
+    std::cout << "\ncalculated dK " << i << "\n";
+    drawKernels(cache.conv.dK[i]);
+    std::cout << "\ntrue dK " << i << "\n";
+    drawKernels(true_dK);
+
+  }
+
   return 0;
 }
 

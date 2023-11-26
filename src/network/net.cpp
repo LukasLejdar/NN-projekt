@@ -25,43 +25,11 @@
 #include "math.hpp"
 #include "../mnist_reader.hpp"
 
-void drawConv(Cache& cache) {
-  std::cout << "\nout -1" << "\n";
-  draw3D(cache.conv.out[-1]);
-
-  for(size_t i = 0; i < cache.conv.count; i++) {
-    std::cout << "\nk " << i << "\n";
-    drawKernels(cache.conv.k[i]);
-
-    std::cout << "\ndK " << i << "\n";
-    drawKernels(cache.conv.dK[i]);
-
-    std::cout << "\nb " << i << "\n";
-    draw3D(cache.conv.b[i]);
-
-    std::cout << "\ndB " << i << "\n";
-    draw3D(cache.conv.dB[i]);
-
-    std::cout << "\na " << i << "\n";
-    draw3D(cache.conv.a[i]);
-
-    std::cout << "\ndA " << i << "\n";
-    draw3D(cache.conv.dA[i]);
-
-    std::cout << "\nout " << i << "\n";
-    draw3D(cache.conv.out[i]);
-
-    std::cout << "\ndOut " << i << "\n";
-    draw3D(cache.conv.dOut[i]);
-  }
-}
-
 Net::Net(Model& model): model(model) {
   conv_mtx = new std::mutex[model.conv_count];
   dense_mtx = new std::mutex[model.dense_count];
-  for(size_t t = 0; t < NTHREADS; t++) initialize_cache(threadscache[t], model);
-  for(size_t i = 0; i < model.dense_count; i++) model.dense_layers[i].randomize();
-  for(size_t i = 0; i < model.conv_count; i++) model.conv_layers[i].randomize();
+  for(size_t t = 0; t < NTHREADS+1; t++) initialize_cache(threadscache[t], model);
+  model.randomize();
 }
 
 Vector& forward_prop(Cache& cache) {
@@ -70,8 +38,8 @@ Vector& forward_prop(Cache& cache) {
   for(size_t i = 0; i < cache.conv.count; i++) {
     correlateAv(cache.conv.k[i], cache.conv.out[i-1], cache.conv.a[i]);
     addTens(cache.conv.b[i], cache.conv.a[i]);
+    relu(cache.conv.a[i]);
     maxPooling(cache.conv.a[i], cache.conv.pooling[i], cache.conv.out[i], cache.conv.loc[i]);
-    relu(cache.conv.out[i]);
   }
   
   for(size_t i = 0; i < cache.dense.count; i++) {
@@ -95,23 +63,19 @@ void back_prop(Cache& cache) {
     addTens(cache.dense.dA[i], cache.dense.dB[i]);
     matMulvvT<false>(cache.dense.dA[i], cache.dense.a[i-1], cache.dense.dW[i]);
     matMulATv(cache.dense.w[i], cache.dense.dA[i], cache.dense.dA[i-1]);
-    relu_backward(cache.dense.dA[i-1], cache.dense.a[i-1]);
+    if (i != 0) relu_backward(cache.dense.dA[i-1], cache.dense.a[i-1]);
   }
 
-  maxPooling_backward(cache.conv.dOut[cache.conv.count-1], cache.conv.dA[cache.conv.count-1], cache.conv.loc[cache.conv.count-1]);
   for(i = cache.conv.count-1; i >= 0; i--) {
+    maxPooling_backward(cache.conv.dOut[i], cache.conv.dA[i], cache.conv.loc[i]);
+    relu_backward(cache.conv.dA[i], cache.conv.a[i]);
     addTens(cache.conv.dA[i], cache.conv.dB[i]);
     correlatevvT<false>(cache.conv.dA[i], cache.conv.out[i-1], cache.conv.dK[i]);
-    if(i != 0) { 
-      convolveATv(cache.conv.k[i], cache.conv.dA[i], cache.conv.dOut[i-1]); 
-      relu_backward(cache.conv.dOut[i-1], cache.conv.out[i-1]);
-      maxPooling_backward(cache.conv.dOut[i-1], cache.conv.dA[i-1], cache.conv.loc[i-1]);
-    }
+    if(i != 0)  convolveATv(cache.conv.k[i], cache.conv.dA[i], cache.conv.dOut[i-1]); 
   }
 }
 
 void Net::apply_gradient(Cache& cache, size_t t) {
-
   for(size_t i = 0; i < cache.conv.count; i++) {
     conv_mtx[i].lock();
     rmsProp(cache.conv.dK[i], model.conv_layers[i].emaK, learning_rate, decay_rate1, t);
@@ -119,9 +83,6 @@ void Net::apply_gradient(Cache& cache, size_t t) {
 
     addTens(cache.conv.dK[i], model.conv_layers[i].k);
     addTens(cache.conv.dB[i], model.conv_layers[i].b);
-
-    //std::cout << "updated kernels:" << "\n";
-    //drawKernels(cache.conv.k[i]);
     conv_mtx[i].unlock();
   }
 
@@ -136,7 +97,7 @@ void Net::apply_gradient(Cache& cache, size_t t) {
   }
 }
 
-void zeroDerivatives(Cache& cache) {
+void zeroGradients(Cache& cache) {
   for(size_t i = 0; i < cache.conv.count; i++) {
     zero(cache.conv.dK[i]);
     zero(cache.conv.dB[i]);
@@ -167,20 +128,57 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
   }
 }
 
+void test_kGrad(Cache& cache) {
+  std::cout << "\nbefore k\n";
+  drawKernels(cache.conv.k[0]);
+  const Tensor<4> true_dK(cache.conv.k[0].shape);
+  const Tensor<4> k_orig(cache.conv.k[0].shape);
+  copyToTensorOfSameSize(cache.conv.k[0], k_orig);
+
+  for(size_t i = 0; i < cache.conv.k[0].size; i++) {
+    copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
+    float e = 0.0001;
+    cache.conv.k[0].v[i] += e;
+
+    forward_prop(cache);
+    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+
+    copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
+    cache.conv.k[0].v[i] -= e;
+    forward_prop(cache);
+    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+
+    true_dK.v[i] = (entropy1 - entropy2) /(2*e);
+  }
+  
+  copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
+
+  std::cout << "\nafter k\n";
+  drawKernels(cache.conv.k[0]);
+  std::cout << "\ntest dK\n";
+  drawKernels(cache.conv.dK[0]);
+  std::cout << "\ntrue dK\n";
+  drawKernels(true_dK);
+}
+
 void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
-  int period = 5000;
+  int period = 1000;
   float entrsum = 0;
   reader.loop_to_beg();
-  zeroDerivatives(cache);
+  zeroGradients(cache);
 
   while(reader.read_next()) {
     prepare_cache(reader.last_read, reader.last_lable, cache);
     forward_prop(cache);
     back_prop(cache);
 
+    //if(reader.index % mini_batch == 0) {
+    //  test_kGrad(cache);
+    //}
+
     if(reader.index % mini_batch == 0) {
       apply_gradient(cache, reader.number_of_entries*NTHREADS*epoch + reader.index*NTHREADS); 
-      zeroDerivatives(cache);
+      zeroGradients(cache);
     }
 
     entrsum += crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
@@ -233,7 +231,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 
-    if(e % 5 != 0) continue;
+    if(e % 1 != 0) continue;
     std::cout << "\n";
     test(sample_data, const_cast<char*>("smaple data accuracy: "));
     test(control_data, const_cast<char*>("control data accuracy: "));
@@ -298,3 +296,81 @@ float Net::test(MnistReader& reader, char* message) {
 }
 
 
+//void test_bGrad(Cache& cache) {
+//  std::cout << "\nbefore b\n";
+//  draw3D(cache.conv.b[0]);
+//  const Tensor<3> true_dB(cache.conv.b[0].shape);
+//  const Tensor<3> b_orig(cache.conv.b[0].shape);
+//  copyToTensorOfSameSize(cache.conv.b[0], b_orig);
+//
+//  for(size_t i = 0; i < cache.conv.b[0].size; i++) {
+//    copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
+//    float e = 0.0001;
+//    cache.conv.b[0].v[i] += e;
+//
+//    forward_prop(cache);
+//    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+//
+//    copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
+//    cache.conv.b[0].v[i] -= e;
+//    forward_prop(cache);
+//    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+//
+//    true_dB.v[i] = (entropy1 - entropy2) /(2*e);
+//  }
+//  
+//  copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
+//
+//  std::cout << "\nafter b\n";
+//  draw3D(cache.conv.b[0]);
+//  std::cout << "\ntest dB\n";
+//  draw3D(cache.conv.dB[0]);
+//  std::cout << "\ntrue dB\n";
+//  draw3D(true_dB);
+//}
+//
+//Vector& forward_propOut(Cache& cache) {
+//  assert(cache.conv.out[cache.conv.count-1].v == cache.dense.a[-1].v);
+//
+//  for(size_t i = 0; i < cache.dense.count; i++) {
+//    matMulAv(cache.dense.w[i], cache.dense.a[i-1], cache.dense.a[i]);
+//    addTens(cache.dense.b[i], cache.dense.a[i]);
+//    if(i != cache.dense.count -1) relu(cache.dense.a[i]);
+//  }
+//
+//  softmax(cache.dense.a[cache.dense.count-1]);
+//  return cache.dense.a[cache.dense.count -1];
+//}
+//
+//void test_outGradient(Cache& cache) {
+//  size_t k = cache.conv.count-1;
+//
+//  const Tensor<3> true_dOut(cache.conv.out[k].shape);
+//  const Tensor<3> out_orig(cache.conv.out[k].shape);
+//  copyToTensorOfSameSize(cache.conv.out[k], out_orig);
+//
+//  for(size_t i = k; i < cache.conv.out[0].size; i++) {
+//    copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
+//    float e = 0.0001;
+//    cache.conv.out[k].v[i] += e;
+//
+//    forward_propOut(cache);
+//    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+//
+//    copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
+//    cache.conv.out[k].v[i] -= e;
+//    forward_propOut(cache);
+//    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
+//
+//    true_dOut.v[i] = (entropy1 - entropy2) /(2*e);
+//  }
+//  
+//  copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
+//
+//  std::cout << "\nafter out\n";
+//  draw3D(cache.conv.out[k]);
+//  std::cout << "\ntest dOut\n";
+//  draw3D(cache.conv.dOut[k]);
+//  std::cout << "\ntrue dOut\n";
+//  draw3D(true_dOut);
+//}
