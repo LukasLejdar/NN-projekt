@@ -71,6 +71,12 @@ struct Shape<dim, std::enable_if_t<(dim > 1)>> {
     return dimensions[index];
   }
 
+  Shape& operator=(const Shape& other) {
+    Shape temp(other);
+    swap(temp);
+    return *this;
+  }
+
   bool operator==(const Shape& other) const {
     return std::equal(dimensions, dimensions+dim, other.dimensions, other.dimensions+dim);
   }

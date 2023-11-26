@@ -1,4 +1,4 @@
-OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math 
+OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math -DNDEBUG 
 CFLAGS=-Wall -Wextra -pedantic -ggdb 
 CC=g++
 
@@ -15,7 +15,7 @@ _test: ./test/test.cpp
 
 _benchmark: ./test/benchmark.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -DNDEBUG -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
+	$(CC) $(CFLAGS) $(OPTIMIZATION_FLAGS) -o ./build/benchmark ./test/benchmark.cpp ./src/network/math.cpp
 
 _net: ./src/main.cpp
 	mkdir -p build
