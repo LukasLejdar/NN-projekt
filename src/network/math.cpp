@@ -14,10 +14,6 @@
 
 #define RESET "\033[0m"
 
-#define GRAYSCALE_LENGTH 23
-static char *grayscale = (char *)" .:-=+*#%@@";
-
-
 void drawPixel(float pixel) {
   int br = erf(1.2*pixel)*255;
   if (br >= 0) {

@@ -7,35 +7,34 @@
 #include <cstddef>
 #include <math.h>
 #include <stdexcept>
+#include "math.hpp"
 
-inline void relu(float v[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    v[i]=std::max<float>(0.0, v[i]);
+template<size_t dim>
+inline void relu(Tensor<dim>& tensor) {
+  for(size_t i = 0; i < tensor.size; i++) {
+    tensor.v[i]=std::max<float>(0.0, tensor.v[i]);
   }
 }
 
-inline void relu_backward(float dA[], float A[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    dA[i] = (A[i] > 0) * dA[i];
+template<size_t dim>
+inline void relu_backward(Tensor<dim>& dA, Tensor<dim>& A) {
+  assert(dA.size == A.size);
+  for(size_t i = 0; i < A.size; i++) {
+    dA.v[i] = (A.v[i] > 0) * dA.v[i];
   }
 }
 
-inline void sigmoid(float v[], size_t length) {
-  for(size_t i = 0; i < length; i++) {
-    v[i] = 1 / (1 + exp(-v[i]));
-  }
-}
-
-inline void softmax(float v[], size_t length) {
+template<size_t dim>
+inline void softmax(Tensor<dim>& t) {
   float sum = 0;
-  float max = *std::max_element(v, v + length);
-  for(size_t i = 0; i < length; i++) {
-    v[i] -= max;
-    v[i] = exp(v[i]);
-    sum += v[i];
+  float max = *std::max_element(t.v, t.v + t.size);
+  for(size_t i = 0; i < t.size; i++) {
+    t.v[i] -= max;
+    t.v[i] = exp(t.v[i]);
+    sum += t.v[i];
   }
-  for(size_t i = 0; i < length; i++) {
-    v[i] = v[i] / sum;
+  for(size_t i = 0; i < t.size; i++) {
+    t.v[i] = t.v[i] / sum;
   }
 }
 

@@ -29,7 +29,7 @@ void drawConv(Cache& cache) {
   std::cout << "\nout -1" << "\n";
   draw3D(cache.conv.out[-1]);
 
-  for(int i = 0; i < cache.conv.count; i++) {
+  for(size_t i = 0; i < cache.conv.count; i++) {
     std::cout << "\nk " << i << "\n";
     drawKernels(cache.conv.k[i]);
 
@@ -71,16 +71,16 @@ Vector& forward_prop(Cache& cache) {
     correlateAv(cache.conv.k[i], cache.conv.out[i-1], cache.conv.a[i]);
     addTens(cache.conv.b[i], cache.conv.a[i]);
     maxPooling(cache.conv.a[i], cache.conv.pooling[i], cache.conv.out[i], cache.conv.loc[i]);
-    relu(cache.conv.out[i].v, cache.conv.out[i].size);
+    relu(cache.conv.out[i]);
   }
   
   for(size_t i = 0; i < cache.dense.count; i++) {
     matMulAv(cache.dense.w[i], cache.dense.a[i-1], cache.dense.a[i]);
     addTens(cache.dense.b[i], cache.dense.a[i]);
-    if(i != cache.dense.count -1) relu(cache.dense.a[i].v, cache.dense.a[i].size);
+    if(i != cache.dense.count -1) relu(cache.dense.a[i]);
   }
 
-  softmax(cache.dense.a[cache.dense.count-1].v, cache.dense.a[cache.dense.count-1].size);
+  softmax(cache.dense.a[cache.dense.count-1]);
   return cache.dense.a[cache.dense.count -1];
 }
 
@@ -95,7 +95,7 @@ void back_prop(Cache& cache) {
     addTens(cache.dense.dA[i], cache.dense.dB[i]);
     matMulvvT<false>(cache.dense.dA[i], cache.dense.a[i-1], cache.dense.dW[i]);
     matMulATv(cache.dense.w[i], cache.dense.dA[i], cache.dense.dA[i-1]);
-    relu_backward(cache.dense.dA[i-1].v, cache.dense.a[i-1].v, cache.dense.a[i-1].size);
+    relu_backward(cache.dense.dA[i-1], cache.dense.a[i-1]);
   }
 
   maxPooling_backward(cache.conv.dOut[cache.conv.count-1], cache.conv.dA[cache.conv.count-1], cache.conv.loc[cache.conv.count-1]);
@@ -104,7 +104,7 @@ void back_prop(Cache& cache) {
     correlatevvT<false>(cache.conv.dA[i], cache.conv.out[i-1], cache.conv.dK[i]);
     if(i != 0) { 
       convolveATv(cache.conv.k[i], cache.conv.dA[i], cache.conv.dOut[i-1]); 
-      relu_backward(cache.conv.dOut[i-1].v, cache.conv.out[i-1].v, cache.conv.out[i-1].size);
+      relu_backward(cache.conv.dOut[i-1], cache.conv.out[i-1]);
       maxPooling_backward(cache.conv.dOut[i-1], cache.conv.dA[i-1], cache.conv.loc[i-1]);
     }
   }
