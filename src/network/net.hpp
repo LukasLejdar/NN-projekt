@@ -11,7 +11,7 @@
 
 class Net {
   public:
-    size_t mini_batch = 30;
+    size_t mini_batch = 64;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
@@ -20,8 +20,7 @@ class Net {
 
     void prepare_cache(Matrix& X, int y, Cache& cache);
     void train_epochs(MnistReader& reader, int epochs, MnistReader& test_reader);
-    void test(Cache& cache, MnistReader& reader);
-    float test(MnistReader& reader);
+    float test(MnistReader& reader, char* message);
 
   private:
     std::mutex* dense_mtx;

@@ -19,22 +19,23 @@ int main() {
   MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
   //training_data.number_of_entries = 10;
 
-  const size_t CONV_LENGTH = 2;
+  const size_t CONV_LENGTH = 1;
   Convolutional conv_layers[CONV_LENGTH] {
-    {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape 
-    {{32,13,13}, {64,3,3}, {2,2}},
+    //{{1,28,28}, {1,3,3}, {2,2}}, //input, kernel shape 
+    //{{1,13,13}, {1,3,3}, {2,2}},
+    {{1,28,28}, {24,3,3}, {2,2}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 2;
   Dense dense_layers[DENSE_LENGTH] = {
-    {1600, 128},
+    {4056, 128},
     {128, 10},
   };
 
   Model model(CONV_LENGTH, conv_layers, DENSE_LENGTH, dense_layers);
   Net net(model);
-  net.train_epochs(training_data, 15, test_data);
-  net.test(test_data);
+  net.train_epochs(training_data, 50, test_data);
+  net.test(test_data, const_cast<char*>("accuracy for test data: "));
 
   return 0;
 }
