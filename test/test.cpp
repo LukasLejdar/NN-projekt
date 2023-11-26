@@ -449,18 +449,21 @@ Matrix* getMaxpoolingTest0() {
     2,3,4,5,9,
     5,6,7,8,9,
     7,8,9,0,9,
+    9,9,9,9,9,
              
     1,2,3,4,9,
     2,3,4,5,9,
     5,6,7,8,9,
     7,8,9,0,9,
+    9,9,9,9,9,
              
     1,2,3,4,9,
     2,3,4,5,9,
     5,6,7,8,9,
     7,8,9,0,9,
+    9,9,9,9,9,
   };
-  Tensor<3> t(v, 3,4,5);
+  Tensor<3> t(v, 3,5,5);
   Tensor<3> result(3,2,2);
   float correct[] = {
     3,5,
@@ -478,12 +481,12 @@ Matrix* getMaxpoolingTest0() {
   Matrix * list = new Matrix[]{{result.v,3,4}, {correct,3,4}};
 
   maxPooling_backward(result, t, max_locations);
-  printMat(t[0]);
-  std::cout << "\n";
-  printMat(t[1]);
-  std::cout << "\n";
-  printMat(t[2]);
-  std::cout << "\n";
+  //printMat(t[0]);
+  //std::cout << "\n";
+  //printMat(t[1]);
+  //std::cout << "\n";
+  //printMat(t[2]);
+  //std::cout << "\n";
 
   return list;
 }
@@ -527,16 +530,72 @@ Matrix* getMaxpoolingTest1() {
  return list;
 }
 
+Matrix* getMaxpoolingTest2() {
+  float v[] = {
+    1,2,3,4,9,
+    2,3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+    9,9,9,9,9,
+             
+    -7,-7,3,4,9,
+    -5,-3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+    9,9,9,9,9,
+             
+    1,2,3,4,9,
+    2,3,4,5,9,
+    5,6,7,8,9,
+    7,8,9,0,9,
+    9,9,9,9,9,
+  };
+  Tensor<3> t(v, 3,5,5);
+  Tensor<3> result(3,5,5);
+  Tensor<3> correct(t);
+  Shape<2> kernel(1,1);
+  TensorT<size_t, 3> max_locations(3,5,5);
+  maxPooling(t, kernel, result, max_locations);
+  Matrix * list = new Matrix[]{{result.v,3,25}, {correct.v,3,25}};
+
+  //maxPooling_backward(result, t, max_locations);
+  //printMat(t[0]);
+  //std::cout << "\n";
+  //printMat(t[1]);
+  //std::cout << "\n";
+  //printMat(t[2]);
+  //std::cout << "\n";
+
+  //draw3D(t);
+
+  return list;
+}
 
 int main(void) {
   MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
   training_data.read_next();
   drawMat(training_data.last_read);
-  std::cout << "\nsame image expected\n";
+  std::cout << "\nsame image expected\n\n";
   MnistReader sub_reader = MnistReader(training_data, 0, 10);
   sub_reader.read_next();
-
   drawMat(sub_reader.last_read);
+
+  sub_reader.read_next();
+  Tensor<3> result(1,14,14), input(1,28,28);
+  TensorT<size_t, 3> loc(1,14,14);
+  Shape<2> kernel(2,2);
+  copyToTensorOfSameSize(sub_reader.last_read, input);
+  maxPooling(input, kernel, result, loc);
+
+  std::cout << "\nmax pooling\n";
+  draw3D(input);
+  std::cout << "\n";
+  draw3D(result);
+  maxPooling_backward(result, input, loc);
+
+  std::cout << "\nmax pooling backward\n";
+  draw3D(input);
+  std::cout << "\n";
 
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
@@ -554,7 +613,9 @@ int main(void) {
   testMatOperation(getMulTest1ATv(), "mulTestATv test 1");
   testMatOperation(getMulTest2ATv(), "mulTestATv test 2");
   testMatOperation(getMulTest0vvT(), "mulTestvvT test0");
-  testMatOperation(getMaxpoolingTest0(), "maxpooling test");
   testMatOperation(getMaxpoolingTest1(), "maxpooling test indicies");
+  testMatOperation(getMaxpoolingTest0(), "maxpooling test");
+  testMatOperation(getMaxpoolingTest2(), "maxpooling test kernel size 1 ");
+
 }
 

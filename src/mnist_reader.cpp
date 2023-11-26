@@ -115,7 +115,7 @@ bool MnistReader::read_next(Matrix* saveto, int* lable) {
       last_read.v[i] = temp/255.0;
   }
 
-  if(saveto != nullptr) { copyMatricesOfSameSize(last_read, *saveto); }
+  if(saveto != nullptr) { copyToTensorOfSameSize(last_read, *saveto); }
   if(lable != nullptr) { *lable = last_lable; };
 
   index++;

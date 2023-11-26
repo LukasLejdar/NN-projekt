@@ -14,8 +14,15 @@
 
 void printVec(const Vector& m, char separator='\0');
 void printMat(const Matrix& m, char separator='\0');
-void drawMat(const Matrix& m, float sensitivity = 1);
-void copyMatricesOfSameSize(const Matrix& from, const Matrix& to);
+void drawMat(const Matrix& m);
+void drawKernels(const Tensor<4>& t);
+void draw3D(const Tensor<3>& t);
+
+template<size_t dim1, size_t dim2>
+void copyToTensorOfSameSize(const Tensor<dim1>& from, const Tensor<dim2>& to) {
+  assert(from.size == to.size);
+  std::copy(from.v, from.v+from.size, to.v);
+}
 
 template<size_t dim>
 std::tuple<float, float> getVarAndExp(const Tensor<dim>& t) {
