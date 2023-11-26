@@ -18,7 +18,6 @@ class MnistReader {
 
     MnistReader(std::string images_path, std::string labels_path);
     MnistReader(MnistReader& reader, int from, int to);
-    MnistReader& operator=(MnistReader& other) = default;
 
     int last_lable;
     Matrix last_read;

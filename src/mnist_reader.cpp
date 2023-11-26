@@ -83,7 +83,7 @@ MnistReader::MnistReader(MnistReader& other, int from, int to):
     images_begin(other.images_begin),
     labels_begin(other.labels_begin)
   {
-    assert(0 <= from && from < to);
+    assert(0 <= from && from <= to);
     assert(to <= other.number_of_entries);
 
     if (!images_file.is_open()) {
