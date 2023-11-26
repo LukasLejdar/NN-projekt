@@ -124,12 +124,6 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
       std::copy(other_v, other_v+size, v); 
     }
 
-  template<size_t dim2> 
-  void copyTensorOfSameSize(const TensorT<T, dim2> other) {
-    assert(other.size == size);
-    std::copy(other.v, other.v+size, v);
-  }
-
   void faltten() {
     std::fill(shape.dimensions, size, 1);
     shape.dimensions[0] = size;
@@ -255,12 +249,6 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
   TensorT(float *other_v, size_t size) : shape(size), v(nullptr), is_subtensor(false) { 
     v = new T[size];
     std::copy(other_v, other_v+size, v); 
-  }
-
-  template<size_t dim2> 
-  void copyTensorOfSameSize(const TensorT<T, dim2> other) {
-    assert(other.size == size);
-    std::copy(other.v, other.v+size, v);
   }
 
   T& operator[](int index) const {
