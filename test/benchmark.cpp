@@ -8,35 +8,7 @@
 #include <string>
 #include "../src/network/math.hpp"
 #include "../src/network/layer.hpp"
-
-class Timer {
-  public:
-    Timer(std::string message) {
-      const int length = message.length(); 
-      this->message = new char[length + 1]; 
-      strcpy(this->message, message.c_str());
-
-      startTimePoint = std::chrono::high_resolution_clock::now();
-    }
-
-    ~Timer() {
-      stop();
-    }
-
-    inline void stop() {
-      auto endTimePoint = std::chrono::high_resolution_clock::now();
-      auto start = std::chrono::time_point_cast<std::chrono::microseconds>(startTimePoint).time_since_epoch();
-      auto end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimePoint).time_since_epoch();
-
-      auto duration = end - start;
-      double ms = duration.count() * 0.001;
-      printf(message, ms);
-    }
-
-  private:
-    char* message;
-    std::chrono::time_point<std::chrono::high_resolution_clock> startTimePoint;
-};
+#include "benchmark.hpp"
 
 Matrix* getMulTest0() {
   size_t size1 = 1024; 
@@ -188,6 +160,17 @@ void benchZeroMat() {
   timer.stop();
 }
 
+void benchMaxPooling() {
+  Tensor<3> input(32,28,28);
+  Tensor<3> result(64,13,13);
+  TensorT<size_t , 3> loc(64,13,13);
+  Shape<2> kernel(2,2);
+  randomize(input);
+
+  Timer timer = Timer("bench max pooling: %0.3f ms \n");
+  maxPooling(input, kernel, result, loc);
+}
+
 int main(void) {
   std::cout << "find optimal tailing\n";
   benchMatMul();
@@ -213,4 +196,7 @@ int main(void) {
   std::cout << "\n";
   benchAddMat();
   benchZeroMat();
+
+  std::cout << "\n";
+  benchMaxPooling();
 }
