@@ -28,7 +28,7 @@
 Net::Net(Model& model): model(model) {
   conv_mtx = new std::mutex[model.conv_count];
   dense_mtx = new std::mutex[model.dense_count];
-  for(size_t t = 0; t < NTHREADS+1; t++) initialize_cache(threadscache[t], model);
+  for(size_t t = 0; t < NTHREADS; t++) initialize_cache(threadscache[t], model);
   model.randomize();
 }
 
@@ -128,41 +128,8 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
   }
 }
 
-void test_kGrad(Cache& cache) {
-  std::cout << "\nbefore k\n";
-  drawKernels(cache.conv.k[0]);
-  const Tensor<4> true_dK(cache.conv.k[0].shape);
-  const Tensor<4> k_orig(cache.conv.k[0].shape);
-  copyToTensorOfSameSize(cache.conv.k[0], k_orig);
-
-  for(size_t i = 0; i < cache.conv.k[0].size; i++) {
-    copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
-    float e = 0.0001;
-    cache.conv.k[0].v[i] += e;
-
-    forward_prop(cache);
-    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-
-    copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
-    cache.conv.k[0].v[i] -= e;
-    forward_prop(cache);
-    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-
-    true_dK.v[i] = (entropy1 - entropy2) /(2*e);
-  }
-  
-  copyToTensorOfSameSize(k_orig, cache.conv.k[0]);
-
-  std::cout << "\nafter k\n";
-  drawKernels(cache.conv.k[0]);
-  std::cout << "\ntest dK\n";
-  drawKernels(cache.conv.dK[0]);
-  std::cout << "\ntrue dK\n";
-  drawKernels(true_dK);
-}
-
 void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
-  int period = 1000;
+  int period = 5000;
   float entrsum = 0;
   reader.loop_to_beg();
   zeroGradients(cache);
@@ -172,10 +139,6 @@ void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
     forward_prop(cache);
     back_prop(cache);
 
-    //if(reader.index % mini_batch == 0) {
-    //  test_kGrad(cache);
-    //}
-
     if(reader.index % mini_batch == 0) {
       apply_gradient(cache, reader.number_of_entries*NTHREADS*epoch + reader.index*NTHREADS); 
       zeroGradients(cache);
@@ -183,13 +146,9 @@ void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
 
     entrsum += crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
 
-    if(reader.index % (period*NTHREADS) == (period*t_index + epoch)) {
-      //drawConv(cache);
-    }
-
     if(reader.index % period != 0) continue;
-
     if(reader.index % (period*NTHREADS) == period*t_index) {
+      drawConv(cache);
       std::cout << " executing sample " << reader.index << " on thread " << t_index << " entropy average " << entrsum / period << "\n";
     }
     entrsum = 0;
@@ -215,7 +174,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
   size_t control_size = training_reader.number_of_entries / 6;
   size_t sample_size = training_reader.number_of_entries - control_size;
   MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
-  MnistReader sample_data = MnistReader(training_reader, 0, std::min(5000, training_reader.number_of_entries));
+  MnistReader sample_data = MnistReader(training_reader, 0, std::min(10000, training_reader.number_of_entries));
 
   std::thread threads[NTHREADS-1];
 
@@ -245,7 +204,6 @@ void test(Cache& cache, MnistReader& reader) {
   reader.loop_to_beg();
 
   size_t out_shape = cache.dense.a[cache.dense.count-1].size;
-  Matrix results(out_shape, out_shape);
   TensorT<int, 1> count(out_shape);
   int total_correct = 0;
 
@@ -256,23 +214,22 @@ void test(Cache& cache, MnistReader& reader) {
     int max = std::distance(preds.v, std::max_element(preds.v, preds.v + preds.size));
 
     count.v[reader.last_lable]++;
-    results[reader.last_lable][max]++; 
+    cache.results[reader.last_lable][max]++; 
     if (max == reader.last_lable) total_correct++;
   }
 
   for(size_t x = 0; x < out_shape; x++) {
     for(size_t y = 0; y < out_shape; y++) {
-      results[x][y] = results[x][y] / count[x];
+      cache.results[x][y] = cache.results[x][y] / (count[x]+0.00001);
     }
   }
 
-  float percentage = static_cast<float>(total_correct) / reader.number_of_entries;
+  float percentage = static_cast<float>(total_correct) / (reader.number_of_entries + 0.00001);
   cache.accuracy = percentage;
   
   //std::cout << "\ntotal accuracy: " << percentage << "\n";
   //std::cout << "guess count\n";
-  //printMat(results);
-  //drawMat(results, 1);
+  //drawMat(results);
 }
 
 float Net::test(MnistReader& reader, char* message) {
@@ -285,92 +242,23 @@ float Net::test(MnistReader& reader, char* message) {
   
 
   float total_accuracy = 0;
+  Tensor<2> total_results(threadscache[0].results.shape);
+
   run_in_parallel(threads, NTHREADS, [&threads_readers, this](int t) {
     ::test(threadscache[t], *threads_readers[t]);
-  }, [this, &total_accuracy](int t) { 
+  }, [this, &total_accuracy, &total_results](int t) { 
     total_accuracy += threadscache[t].accuracy; 
+    addTens(threadscache[t].results, total_results);
   });
 
-  std::cout << message << total_accuracy / NTHREADS << "\n";
+  if(total_accuracy == total_accuracy && total_accuracy > 0) {
+    std::cout << message << total_accuracy / NTHREADS << "\n";
+    total_results * (1.0f/NTHREADS);
+    drawMat(total_results);
+  } else {
+    std::cout << message << " 0\n";  
+  }
+
   return threadscache[0].accuracy;
 }
 
-
-//void test_bGrad(Cache& cache) {
-//  std::cout << "\nbefore b\n";
-//  draw3D(cache.conv.b[0]);
-//  const Tensor<3> true_dB(cache.conv.b[0].shape);
-//  const Tensor<3> b_orig(cache.conv.b[0].shape);
-//  copyToTensorOfSameSize(cache.conv.b[0], b_orig);
-//
-//  for(size_t i = 0; i < cache.conv.b[0].size; i++) {
-//    copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
-//    float e = 0.0001;
-//    cache.conv.b[0].v[i] += e;
-//
-//    forward_prop(cache);
-//    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-//
-//    copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
-//    cache.conv.b[0].v[i] -= e;
-//    forward_prop(cache);
-//    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-//
-//    true_dB.v[i] = (entropy1 - entropy2) /(2*e);
-//  }
-//  
-//  copyToTensorOfSameSize(b_orig, cache.conv.b[0]);
-//
-//  std::cout << "\nafter b\n";
-//  draw3D(cache.conv.b[0]);
-//  std::cout << "\ntest dB\n";
-//  draw3D(cache.conv.dB[0]);
-//  std::cout << "\ntrue dB\n";
-//  draw3D(true_dB);
-//}
-//
-//Vector& forward_propOut(Cache& cache) {
-//  assert(cache.conv.out[cache.conv.count-1].v == cache.dense.a[-1].v);
-//
-//  for(size_t i = 0; i < cache.dense.count; i++) {
-//    matMulAv(cache.dense.w[i], cache.dense.a[i-1], cache.dense.a[i]);
-//    addTens(cache.dense.b[i], cache.dense.a[i]);
-//    if(i != cache.dense.count -1) relu(cache.dense.a[i]);
-//  }
-//
-//  softmax(cache.dense.a[cache.dense.count-1]);
-//  return cache.dense.a[cache.dense.count -1];
-//}
-//
-//void test_outGradient(Cache& cache) {
-//  size_t k = cache.conv.count-1;
-//
-//  const Tensor<3> true_dOut(cache.conv.out[k].shape);
-//  const Tensor<3> out_orig(cache.conv.out[k].shape);
-//  copyToTensorOfSameSize(cache.conv.out[k], out_orig);
-//
-//  for(size_t i = k; i < cache.conv.out[0].size; i++) {
-//    copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
-//    float e = 0.0001;
-//    cache.conv.out[k].v[i] += e;
-//
-//    forward_propOut(cache);
-//    float entropy1 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-//
-//    copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
-//    cache.conv.out[k].v[i] -= e;
-//    forward_propOut(cache);
-//    float entropy2 = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
-//
-//    true_dOut.v[i] = (entropy1 - entropy2) /(2*e);
-//  }
-//  
-//  copyToTensorOfSameSize(out_orig, cache.conv.out[k]);
-//
-//  std::cout << "\nafter out\n";
-//  draw3D(cache.conv.out[k]);
-//  std::cout << "\ntest dOut\n";
-//  draw3D(cache.conv.dOut[k]);
-//  std::cout << "\ntrue dOut\n";
-//  draw3D(true_dOut);
-//}

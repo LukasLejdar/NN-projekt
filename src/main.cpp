@@ -19,17 +19,17 @@ int main() {
   MnistReader test_data("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
   //training_data.number_of_entries = 100;
 
-  const size_t CONV_LENGTH = 1;
+  const size_t CONV_LENGTH = 2;
   Convolutional conv_layers[CONV_LENGTH] {
     //{{1,28,28}, {1,3,3}, {2,2}}, //input, kernel shape 
     //{{1,13,13}, {1,3,3}, {2,2}},
-    {{1,28,28}, {4,3,3}, {2,2}}, //input, kernel shape 
-    //{{8,13,13}, {16,3,3}, {2,2}}, //input, kernel shape 
+    {{1,28,28}, {8,3,3}, {2,2}}, //input, kernel shape 
+    {{8,13,13}, {16,3,3}, {2,2}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 2;
   Dense dense_layers[DENSE_LENGTH] = {
-    {676, 128},
+    {400, 128},
     {128, 10},
   };
 

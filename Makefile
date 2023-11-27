@@ -23,4 +23,5 @@ _net_debug: ./src/main.cpp
 
 _test_backprop: ./test/test_backprop.cpp
 	mkdir -p build
+	setterm -linewrap off
 	$(CC) $(CFLAGS) -o ./build/test_backprop ./test/test_backprop.cpp ./src/network/math.cpp ./src/network/net.cpp  ./src/mnist_reader.cpp ./src/network/layer.cpp

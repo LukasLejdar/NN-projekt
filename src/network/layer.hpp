@@ -79,9 +79,11 @@ struct ConvCache {
 
 struct Cache {
   size_t y; // corect label
-  float accuracy;
   ConvCache conv;
   DenseCache dense;
+
+  float accuracy;
+  Matrix results;
 };
 
 void initialize_cache(Cache &cache, Model &model);
