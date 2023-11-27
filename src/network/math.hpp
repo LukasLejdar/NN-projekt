@@ -53,8 +53,6 @@ void randomize(const Tensor<dim>& t, float mean=0, float variance=1) {
   for(size_t i = 0; i < t.size; i++) t.v[i] = distribution(generator);
 }
 
-
-
 template<size_t tileSize>
 void transpose(Matrix& a, Matrix& result) {
   size_t ht = a.ht;
@@ -238,11 +236,11 @@ void convolveATv(Tensor<4>& kernel, Tensor<3>& input, Tensor<3>& result) {
   Matrix ker = kernel[0][0];
   Matrix res = result[0];
 
-  for(size_t y = 0; y < kernel.shape[1]; y++) {
-    for(size_t r = 0; r < kernel.shape[0]; r++) {
-      inp.v = &input.v[r*input.ht*input.wt];
-      ker.v = &kernel.v[(y*kernel.shape[1] +r)*kernel.ht*kernel.wt];
-      res.v = &result.v[y*result.ht*result.wt];
+  for(size_t y = 0; y < kernel.shape[0]; y++) {
+    for(size_t x = 0; x < kernel.shape[1]; x++) {
+      inp.v = &input.v[y*input.ht*input.wt];
+      ker.v = &kernel.v[(y*kernel.shape[1] +x)*kernel.ht*kernel.wt];
+      res.v = &result.v[x*result.ht*result.wt];
       convolveFull(ker, inp, res);
     }
   }
