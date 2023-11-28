@@ -572,19 +572,16 @@ Matrix* getMaxpoolingTest2() {
 }
 
 int main(void) {
-  MnistReader training_data("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
-  training_data.read_next();
-  drawMat(training_data.last_read);
-  std::cout << "\nsame image expected\n\n";
-  MnistReader sub_reader = MnistReader(training_data, 0, 10);
-  sub_reader.read_next();
-  drawMat(sub_reader.last_read);
+  MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
+  MnistReader sub_reader = MnistReader(training_set, 20, 30);
+  draw3D(sub_reader.images);
+  std::cout << "\nsame images expected\n\n";
+  draw3D(training_set.images, 20);
 
-  sub_reader.read_next();
   Tensor<3> result(1,14,14), input(1,28,28);
   TensorT<size_t, 3> loc(1,14,14);
   Shape<2> kernel(2,2);
-  copyToTensorOfSameSize(sub_reader.last_read, input);
+  copyToTensorOfSameSize(sub_reader.images[5], input);
   maxPooling(input, kernel, result, loc);
 
   std::cout << "\nmax pooling\n";

@@ -129,7 +129,7 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
 }
 
 void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
-  int period = 5000;
+  size_t period = 5000;
   float entrsum = 0;
   reader.loop_to_beg();
   zeroGradients(cache);
@@ -148,7 +148,7 @@ void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
 
     if(reader.index % period != 0) continue;
     if(reader.index % (period*NTHREADS) == period*t_index) {
-      drawConv(cache);
+      //drawConv(cache);
       std::cout << " executing sample " << reader.index << " on thread " << t_index << " entropy average " << entrsum / period << "\n";
     }
     entrsum = 0;
@@ -174,7 +174,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
   size_t control_size = training_reader.number_of_entries / 6;
   size_t sample_size = training_reader.number_of_entries - control_size;
   MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
-  MnistReader sample_data = MnistReader(training_reader, 0, std::min(10000, training_reader.number_of_entries));
+  MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(10000, training_reader.number_of_entries));
 
   std::thread threads[NTHREADS-1];
 
@@ -187,6 +187,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
   for(int e = 0; e < epochs; e++) {
     std::cout << "epoch " << e << "\n"; 
     run_in_parallel(threads, NTHREADS, [this, e, &training_readers](int t) {
+      training_readers[t]->shuffle();
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 

@@ -123,14 +123,35 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
       v = new T[size];
       std::copy(other_v, other_v+size, v); 
     }
+  
+  T* beg() {
+    return v;
+  }
+
+  T* end() {
+    return v + size;
+  }
+
 
   void faltten() {
     std::fill(shape.dimensions, size, 1);
     shape.dimensions[0] = size;
   }
 
+  TensorT reference(size_t from, size_t to) const {
+    assert(from <= to && to <= size);
+    TensorT new_tensor(true);
+    new_tensor.shape = Shape(shape);
+    new_tensor.shape.dimensions[0] = to - from;
+    new_tensor.shape.size = multiply(new_tensor.dimensions, dim);
+
+    new_tensor.v = &v[from*multiply(dimensions+1, dim-1)];
+    return new_tensor;
+  }
+
   TensorT<T, dim-1> operator[](size_t index) const {
     //std::cout << "[] operator on " << ht << " - " << wt << "\n";
+    assert(index < size);
     TensorT<T, dim-1> new_tensor(true);
     new_tensor.shape.reshape(dimensions+1);
     new_tensor.v = &v[index*new_tensor.size];
@@ -208,7 +229,7 @@ struct Shape<dim, std::enable_if_t<(dim == 1)>> {
   }
 
   size_t operator[](size_t index) const {
-    assert(index == dim);
+    assert(index == 0);
     return size;
   }
 
@@ -235,6 +256,14 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
   TensorT(const TensorT& other): shape(other.shape), v(new T[size]), is_subtensor(false) {
     std::copy(other.v, other.v+size, v);
   }
+  
+  T* beg() {
+    return v;
+  }
+
+  T* end() {
+    return v + size;
+  }
 
   TensorT(size_t size) : shape(size), v(nullptr), is_subtensor(false) { 
     v = new T[size];
@@ -250,7 +279,16 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     std::copy(other_v, other_v+size, v); 
   }
 
-  T& operator[](int index) const {
+  TensorT reference(size_t from, size_t to) const {
+    assert(from <= to && to <= size);
+    TensorT new_tensor(true);
+    new_tensor.shape.size = from - to;
+    new_tensor.v = &v[from];
+    return new_tensor;
+  }
+
+  T& operator[](size_t index) const {
+    assert(index < size);
     return v[index];
   }
 

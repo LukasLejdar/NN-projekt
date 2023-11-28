@@ -35,9 +35,9 @@ Tensor<dim> get_true_grad(Cache& cache, Tensor<dim>& params) {
 }
 
 int main() {
-  MnistReader training_reader("mnist/train-images-idx3-ubyte", "mnist/train-labels-idx1-ubyte");
-  MnistReader test_reader("mnist/t10k-images-idx3-ubyte", "mnist/t10k-labels-idx1-ubyte");
-  training_reader.number_of_entries = 30;
+  MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
+  training_set.number_of_entries = 300;
+  training_set.shuffle();
 
   const size_t CONV_LENGTH = 2;
   Convolutional conv_layers[CONV_LENGTH] {
@@ -56,12 +56,12 @@ int main() {
 
   Cache cache;
   initialize_cache(cache, model);
-  net.train(cache, training_reader, 0, 0);
+  net.train(cache, training_set, 0, 0);
 
-  training_reader.loop_to_beg();
-  training_reader.read_next();
+  training_set.loop_to_beg();
+  training_set.read_next();
   zeroGradients(cache);
-  net.prepare_cache(training_reader.last_read, training_reader.last_lable, cache);
+  net.prepare_cache(training_set.last_read, training_set.last_lable, cache);
 
   float entropy = 0;
   while (entropy < 0.1) {
@@ -70,7 +70,7 @@ int main() {
     entropy = crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
   }
 
-  //drawConv(cache);
+  drawConv(cache);
 
   for(size_t i = 0; i < CONV_LENGTH; i++) {
     Tensor<4> true_dK = get_true_grad(cache, cache.conv.k[i]);

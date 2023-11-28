@@ -7,7 +7,7 @@
 #include "layer.hpp"
 #include "../mnist_reader.hpp"
 
-#define NTHREADS 2
+#define NTHREADS 8
 
 class Net {
   public:

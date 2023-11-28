@@ -1,6 +1,8 @@
 #ifndef MNIST_READER 
 #define MNIST_READER
 
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <ios>
 #include <iostream>
@@ -11,28 +13,27 @@
 
 class MnistReader {
   public:
-    int number_of_entries;
-    int height;
-    int width;
-    int index = -1;
+    size_t number_of_entries;
+    const Tensor<3> images;
+    const TensorT<size_t, 1> labels;
+    TensorT<size_t, 1> permutation;
 
-    MnistReader(std::string images_path, std::string labels_path);
-    MnistReader(MnistReader& reader, int from, int to);
+    MnistReader(std::string images_path, std::string labels_path, Shape<2>, size_t number_of_entries);
+    MnistReader(MnistReader& reader, size_t from, size_t to);
 
-    int last_lable;
+    size_t index = 0;
     Matrix last_read;
-    bool read_next(Matrix* saveto = nullptr, int* lable = nullptr);
+    int last_lable;
+    bool read_next();
     void loop_to_beg();
-    void swap(const MnistReader& other);
+    void shuffle();
 
   private:
     std::string images_path;
     std::string labels_path;
-    std::ifstream images_file;
-    std::ifstream labels_file;
-    std::streampos images_begin;
-    std::streampos labels_begin;
-
 };
+
+Tensor<3>& readMnistImagesCsv(std::string file_path, Shape<2> shape, size_t number_of_entries);
+TensorT<size_t, 1>& readMnistLablesCsv(std::string file_path, size_t number_of_entries);
 
 #endif

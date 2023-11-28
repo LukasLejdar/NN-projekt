@@ -56,9 +56,9 @@ void drawKernels(const Tensor<4> &t) {
   }
 }
 
-void draw3D(const Tensor<3> &t) {
+void draw3D(const Tensor<3> &t, size_t from, size_t max) {
   for (size_t i = 0; i < t.ht; i++) {
-    for (size_t x = 0; x < t.shape[0]; x++) {
+    for (size_t x = from; x < from + std::min<size_t>(t.shape[0], max); x++) {
       for (size_t j = 0; j < t.wt; j++) {
         if (t[x][i][j] != t[x][i][j]) {
           std::cout << "nan";
@@ -72,6 +72,7 @@ void draw3D(const Tensor<3> &t) {
     std::cout << RESET << "\n";
   }
 }
+
 void printVec(const Vector &vec, char separator) {
   for (size_t i = 0; i < vec.size; i++)
     printf("%6.4lf%c ", vec[i], separator);
