@@ -11,8 +11,8 @@
 
 class Net {
   public:
-    size_t mini_batch = 64;
-    float learning_rate = 0.01;
+    size_t mini_batch = 32;
+    float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
 

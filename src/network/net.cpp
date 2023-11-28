@@ -86,7 +86,7 @@ void Net::apply_gradient(Cache& cache, size_t t) {
     conv_mtx[i].unlock();
   }
 
-  for(size_t i = 0; i < cache.dense.count-1; i++) {
+  for(size_t i = 0; i < cache.dense.count; i++) {
     dense_mtx[i].lock();
     rmsProp(cache.dense.dW[i], model.dense_layers[i].emaW, learning_rate, decay_rate1, t);
     rmsProp(cache.dense.dB[i], model.dense_layers[i].emaB, learning_rate, decay_rate1, t);
@@ -167,14 +167,13 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
     threads[t].join();
     std::forward<CallBack>(callback)(t);
   }
-
 }
 
 void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader) {
   size_t control_size = training_reader.number_of_entries / 6;
   size_t sample_size = training_reader.number_of_entries - control_size;
-  MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
-  MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(10000, training_reader.number_of_entries));
+  MnistReader sample_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
+  MnistReader control_data = MnistReader(training_reader, 0, std::min<size_t>(10000, training_reader.number_of_entries));
 
   std::thread threads[NTHREADS-1];
 
@@ -187,7 +186,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
   for(int e = 0; e < epochs; e++) {
     std::cout << "epoch " << e << "\n"; 
     run_in_parallel(threads, NTHREADS, [this, e, &training_readers](int t) {
-      training_readers[t]->shuffle();
+      //training_readers[t]->shuffle();
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 
