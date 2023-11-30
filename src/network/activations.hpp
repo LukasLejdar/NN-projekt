@@ -42,9 +42,25 @@ inline float crossEntropy(float *v, size_t y) {
   return -log(v[y] + 0.00000001);
 }
 
+//template<size_t dim>
+//inline void L2(const Tensor<dim>& w, const Tensor<dim>& dw, float regulatization, float learning_rate) {
+//  assert(w.size == dw.size);
+//  for(size_t i = 0; i < dw.size; i++) {
+//    //w.v[i] = (1-regulatization)*w.v[i] - learning_rate*dw.v[i];
+//    w.v[i] = w.v[i] *-learning_rate*dw.v[i];
+//  }
+//}
 
 template<size_t dim>
-inline void adam(const Tensor<dim>& dw, const Tensor<dim>& ema, const Tensor<dim>& ma, float learning_rate, float decay_rate1, float decay_rate2, size_t t) {
+inline void L2(const Tensor<dim>& w, const Tensor<dim>& dw, float regularization, float lerning_rate) {
+  assert(dw.size == w.size);
+  for(size_t i = 0; i < dw.size; i ++) {
+    w.v[i] = (1-regularization)*w.v[i] - lerning_rate * dw.v[i];
+  }
+}
+
+template<size_t dim>
+inline void adam(const Tensor<dim>& dw, const Tensor<dim>& ema, const Tensor<dim>& ma, float decay_rate1, float decay_rate2, size_t t) {
     assert(dw.size == ema.size && dw.size == ma.size);
 
     for(size_t i = 0; i < dw.size; i++) {
@@ -53,7 +69,7 @@ inline void adam(const Tensor<dim>& dw, const Tensor<dim>& ema, const Tensor<dim
       ma.v[i] = ma.v[i] / (1 - pow(decay_rate1, t));
       ema.v[i] = ema.v[i] / (1 - pow(decay_rate2, t));
 
-      dw.v[i] = ma.v[i]* -learning_rate/(sqrt(ema.v[i]) + 0.00000001);
+      dw.v[i] = ma.v[i] / (sqrt(ema.v[i]) + 0.00000001);
     }
 }
 

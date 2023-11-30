@@ -78,21 +78,22 @@ void back_prop(Cache& cache) {
 void Net::apply_gradient(Cache& cache, size_t t) {
   for(size_t i = 0; i < cache.conv.count; i++) {
     conv_mtx[i].lock();
-    rmsProp(cache.conv.dK[i], model.conv_layers[i].emaK, learning_rate, decay_rate1, t);
-    rmsProp(cache.conv.dB[i], model.conv_layers[i].emaB, learning_rate, decay_rate1, t);
+    adam(cache.conv.dK[i], model.conv_layers[i].emaK, model.conv_layers[i].maK, decay_rate1, decay_rate2, t);
+    adam(cache.conv.dB[i], model.conv_layers[i].emaB, model.conv_layers[i].maB, decay_rate1, decay_rate2, t);
 
-    addTens(cache.conv.dK[i], model.conv_layers[i].k);
-    addTens(cache.conv.dB[i], model.conv_layers[i].b);
+    L2(model.conv_layers[i].k, cache.conv.dK[i], regularization, learning_rate);
+    L2(model.conv_layers[i].b, cache.conv.dB[i], regularization, learning_rate);
     conv_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
     dense_mtx[i].lock();
-    rmsProp(cache.dense.dW[i], model.dense_layers[i].emaW, learning_rate, decay_rate1, t);
-    rmsProp(cache.dense.dB[i], model.dense_layers[i].emaB, learning_rate, decay_rate1, t);
+    adam(cache.dense.dW[i], model.dense_layers[i].emaW, model.dense_layers[i].maW, decay_rate1, decay_rate2, t);
+    adam(cache.dense.dB[i], model.dense_layers[i].emaB, model.dense_layers[i].maB, decay_rate1, decay_rate2, t); 
 
-    addTens(cache.dense.dW[i], model.dense_layers[i].w);
-    addTens(cache.dense.dB[i], model.dense_layers[i].b);
+
+    L2(model.dense_layers[i].w, cache.dense.dW[i], regularization, learning_rate);
+    L2(model.dense_layers[i].b, cache.dense.dB[i], regularization, learning_rate);
     dense_mtx[i].unlock();
   }
 }
