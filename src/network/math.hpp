@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <tuple>
 #include "tensor.hpp"
+#include <immintrin.h>
 
 #ifndef MATH_H
 #define MATH_H
@@ -77,11 +78,32 @@ void transpose(Matrix& a, Matrix& result) {
 
 // Matrix addition -----------------------------------------------------
 
-template<class T, size_t dim>
-inline void addTens(const TensorT<T, dim>& inp, const TensorT<T, dim>& result) {
-  assert(inp.size == result.size);
+template<size_t dim>
+inline void addTens(const Tensor<dim>& inp, const Tensor<dim>& res) {
+  //assert(inp.size == res.size);
+  //for(size_t i = 0; i < inp.size; i ++) {
+  //  res.v[i] += inp.v[i];
+  //}
+  size_t remaining = inp.size % 8;
+  size_t i = 0;
+
+  for (; i < inp.size - remaining; i += 8) {
+    __m256 vi = _mm256_loadu_ps(inp.v + i);
+    __m256 vr = _mm256_loadu_ps(res.v + i);
+    __m256 sum = _mm256_add_ps(vi, vr);
+    _mm256_storeu_ps(res.v + i, sum);
+  }
+
+  for (; i < inp.size; ++i) {
+    res.v[i] += inp.v[i];
+  }
+}
+
+template<size_t dim>
+inline void addTens(const TensorT<int, dim>& inp, const TensorT<int, dim>& res) {
+  assert(inp.size == res.size);
   for(size_t i = 0; i < inp.size; i ++) {
-    result.v[i] += inp.v[i];
+    res.v[i] += inp.v[i];
   }
 }
 
@@ -177,11 +199,34 @@ inline void correlate(Matrix& kernel, Matrix& input, Matrix& result) {
   assert(input.ht - kernel.ht + 1 == result.ht);
   assert(input.wt - kernel.wt + 1 == result.wt);
 
+  //// Check if the size is a multiple of 8 (for AVX)
+  //size_t remaining = inp.size % 8;
+  //size_t i = 0;
+
+  //// Process vectors in blocks of 8 elements
+  //for (; i < inp.size - remaining; i += 8) {
+  //  __m256 vi = _mm256_loadu_ps(inp.v + i);
+  //  __m256 vr = _mm256_loadu_ps(res.v + i);
+  //  __m256 sum = _mm256_add_ps(vi, vr);
+  //  _mm256_storeu_ps(res.v + i, sum);
+  //}
+
+  //// Process the remaining elements
+  //for (; i < inp.size; ++i) {
+  //  res.v[i] += inp.v[i];
+  //}
+  //
+  // __m256 product = _mm256_mul_ps(va, vb);
+  // _mm256_storeu_ps(result.v + i, product);
+
+  //size_t kRemaining = kernel.ht % 8;
+  //size_t lRemaining = kernel.wt % 8;
   for(size_t i = 0; i < result.ht; i++) {
     for(size_t k = 0; k < kernel.ht; k++) {
+
       for(size_t l = 0; l < kernel.wt; l++) {
         for(size_t j = 0; j < result.wt; j++) {
-          result.v[i*result.wt+j] += input.v[(i+k)*input.wt+(j+l)]* kernel.v[k*kernel.wt+l];
+          result.v[i*result.wt+j] += input.v[(i+k)*input.wt+(j+l)] * kernel.v[k*kernel.wt+l];
         }
       }
     }

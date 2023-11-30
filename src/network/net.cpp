@@ -205,7 +205,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
 
-  std::cout << "training finished" << "\n\n"; 
+  std::cout << "training finished" << "\n\n";
 }
 
 

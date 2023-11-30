@@ -17,7 +17,7 @@ class Net {
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
-    float regularization = 0.001;
+    float regularization = 0.0;
 
     Net(Model& model);
 
