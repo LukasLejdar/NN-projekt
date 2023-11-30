@@ -34,7 +34,6 @@ struct Convolutional {
 struct Model {
   const size_t conv_count;
   const size_t dense_count;
-  const size_t layers_count = conv_count + dense_count;
 
   const Convolutional* conv_layers;
   const Dense* dense_layers;
@@ -82,8 +81,8 @@ struct Cache {
   ConvCache conv;
   DenseCache dense;
 
-  size_t total_correct;
   Matrix results;
+  TensorT<int, 1> labels_count;
 };
 
 void initialize_cache(Cache &cache, Model &model);

@@ -17,7 +17,7 @@ class Net {
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
-    float regularization = 0;
+    float regularization = 0.001;
 
     Net(Model& model);
 
@@ -26,6 +26,7 @@ class Net {
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
     float test(MnistReader& reader, char* message);
     void test_no_shinanegens(MnistReader& reader, Cache& cache);
+    void make_preds(const Tensor<3>& images, std::string preds_path);
 
   private:
     std::mutex* conv_k_mtx, *conv_b_mtx;

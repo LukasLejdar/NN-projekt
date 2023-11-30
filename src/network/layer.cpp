@@ -121,7 +121,8 @@ void initialize_cache(Cache& cache, Model& model) {
   cache.conv.out[-1] = Tensor<3>(model.conv_layers[0].in_shape); // input
   cache.conv.out[cache.conv.count-1].vectorize(cache.dense.a[-1]);
   cache.conv.dOut[cache.conv.count-1].vectorize(cache.dense.dA[-1]);
-  cache.results = Matrix(cache.dense.a[cache.dense.count-1].size, cache.dense.a[cache.dense.count-1].size);
+  cache.results = Matrix(model.dense_layers[model.dense_count-1].out_shape.size, model.dense_layers[model.dense_count-1].out_shape.size);
+  cache.labels_count = TensorT<int, 1>(model.dense_layers[model.dense_count-1].out_shape);
 }
 
 void Model::randomize() const {

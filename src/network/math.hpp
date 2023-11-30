@@ -45,6 +45,12 @@ void zero(const Tensor<dim>& t) {
 }
 
 template<size_t dim>
+void zero(const TensorT<int, dim>& t) {
+  std::fill(t.v, t.v+t.size, 0);
+}
+
+
+template<size_t dim>
 void randomize(const Tensor<dim>& t, float mean=0, float variance=1) {
   std::random_device rd;
   std::mt19937 generator(rd());
@@ -71,8 +77,8 @@ void transpose(Matrix& a, Matrix& result) {
 
 // Matrix addition -----------------------------------------------------
 
-template<size_t dim>
-inline void addTens(const Tensor<dim>& inp, const Tensor<dim>& result) {
+template<class T, size_t dim>
+inline void addTens(const TensorT<T, dim>& inp, const TensorT<T, dim>& result) {
   assert(inp.size == result.size);
   for(size_t i = 0; i < inp.size; i ++) {
     result.v[i] += inp.v[i];
