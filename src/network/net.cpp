@@ -26,8 +26,11 @@
 #include "../mnist_reader.hpp"
 
 Net::Net(Model& model): model(model) {
-  conv_mtx = new std::mutex[model.conv_count];
-  dense_mtx = new std::mutex[model.dense_count];
+  conv_b_mtx = new std::mutex[model.conv_count];
+  conv_k_mtx = new std::mutex[model.conv_count];
+  dense_w_mtx = new std::mutex[model.dense_count];
+  dense_b_mtx = new std::mutex[model.dense_count];
+
   for(size_t t = 0; t < NTHREADS; t++) initialize_cache(threadscache[t], model);
   model.randomize();
 }
@@ -77,24 +80,31 @@ void back_prop(Cache& cache) {
 
 void Net::apply_gradient(Cache& cache, size_t t) {
   for(size_t i = 0; i < cache.conv.count; i++) {
-    conv_mtx[i].lock();
+    conv_k_mtx[i].lock();
     adam(cache.conv.dK[i], model.conv_layers[i].emaK, model.conv_layers[i].maK, decay_rate1, decay_rate2, t);
-    adam(cache.conv.dB[i], model.conv_layers[i].emaB, model.conv_layers[i].maB, decay_rate1, decay_rate2, t);
-
     L2(model.conv_layers[i].k, cache.conv.dK[i], regularization, learning_rate);
+    conv_k_mtx[i].unlock();
+  }
+
+  for(size_t i = 0; i < cache.conv.count; i++) {
+    conv_b_mtx[i].lock();
     L2(model.conv_layers[i].b, cache.conv.dB[i], regularization, learning_rate);
-    conv_mtx[i].unlock();
+    adam(cache.conv.dB[i], model.conv_layers[i].emaB, model.conv_layers[i].maB, decay_rate1, decay_rate2, t);
+    conv_b_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
-    dense_mtx[i].lock();
+    dense_w_mtx[i].lock();
     adam(cache.dense.dW[i], model.dense_layers[i].emaW, model.dense_layers[i].maW, decay_rate1, decay_rate2, t);
     adam(cache.dense.dB[i], model.dense_layers[i].emaB, model.dense_layers[i].maB, decay_rate1, decay_rate2, t); 
+    dense_w_mtx[i].unlock();
+  }
 
-
+  for(size_t i = 0; i < cache.dense.count; i++) {
+    dense_b_mtx[i].lock();
     L2(model.dense_layers[i].w, cache.dense.dW[i], regularization, learning_rate);
     L2(model.dense_layers[i].b, cache.dense.dB[i], regularization, learning_rate);
-    dense_mtx[i].unlock();
+    dense_b_mtx[i].unlock();
   }
 }
 
@@ -115,17 +125,17 @@ void Net::prepare_cache(const Matrix& X, int y, Cache& cache) {
   cache.y = y;
 
   for(size_t i = 0; i < cache.conv.count; i++) {
-    conv_mtx[i].lock();
+    conv_k_mtx[i].lock();
     copyToTensorOfSameSize(model.conv_layers[i].k, cache.conv.k[i]);
     copyToTensorOfSameSize(model.conv_layers[i].b, cache.conv.b[i]);
-    conv_mtx[i].unlock();
+    conv_k_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
-    dense_mtx[i].lock();
+    dense_b_mtx[i].lock();
     copyToTensorOfSameSize(model.dense_layers[i].w, cache.dense.w[i]);
     copyToTensorOfSameSize(model.dense_layers[i].b, cache.dense.b[i]);
-    dense_mtx[i].unlock();
+    dense_b_mtx[i].unlock();
   }
 }
 
@@ -202,7 +212,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 
-    test_no_shinanegens(sample_data, threadscache[0]);
+    //test_no_shinanegens(sample_data, threadscache[0]);
     test(sample_data, const_cast<char*>("smaple data accuracy: "));
     //test_no_shinanegens(control_data, threadscache[0]);
     test(control_data, const_cast<char*>("control data accuracy: "));

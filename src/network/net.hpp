@@ -28,8 +28,8 @@ class Net {
     void test_no_shinanegens(MnistReader& reader, Cache& cache);
 
   private:
-    std::mutex* dense_mtx;
-    std::mutex* conv_mtx;
+    std::mutex* conv_k_mtx, *conv_b_mtx;
+    std::mutex* dense_w_mtx, *dense_b_mtx;
 
     Model& model;
     Cache threadscache[NTHREADS];
