@@ -123,6 +123,17 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
       v = new T[size];
       std::copy(other_v, other_v+size, v); 
     }
+
+  template<typename... Args, typename = std::enable_if_t<(
+      sizeof...(Args) == dim && std::is_convertible_v<T, size_t>)>>
+    TensorT(float other_v, Args... args) : shape(args...), v(nullptr), is_subtensor(false) { 
+      v = new T[size];
+      std::copy(other_v, other_v+size, v); 
+    }
+
+  bool is_uninitialized() {
+    return v == nullptr;
+  }
   
   T* beg() {
     return v;
@@ -279,6 +290,11 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     std::copy(other_v, other_v+size, v); 
   }
 
+  TensorT(float other_v, size_t size) : shape(size), v(nullptr), is_subtensor(false) { 
+    v = new T[size];
+    std::copy(other_v, other_v+size, v); 
+  }
+
   TensorT reference(size_t from, size_t to) const {
     assert(from <= to && to <= size);
     TensorT new_tensor(true);
@@ -319,6 +335,10 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     is_subtensor = value;
   }
 
+  bool is_uninitialized() {
+    return v == nullptr;
+  }
+  
   private:
     static const size_t _dim = dim;
     bool is_subtensor;

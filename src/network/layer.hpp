@@ -82,7 +82,7 @@ struct Cache {
   ConvCache conv;
   DenseCache dense;
 
-  float accuracy;
+  size_t total_correct;
   Matrix results;
 };
 

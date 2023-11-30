@@ -594,6 +594,25 @@ int main(void) {
   draw3D(input);
   std::cout << "\n";
 
+  //draw3D(training_set.images);
+  //training_set.augment({-1,-1});
+  //std::cout << "\nAugmentation one up one left\n\n";
+  //draw3D(training_set.augmented_images);
+  //training_set.loop_to_beg();
+  //std::cout << "\n";
+  
+  training_set.loop_to_beg();
+  drawMat(training_set.images[training_set.permutation[0]]);
+  std::cout << "\nAugmentation\n\n";
+  training_set.read_next(false);
+  drawMat(training_set.last_read);
+
+  for(int i = 0; i < 60; i++) {
+    training_set.read_next(false);
+    drawMat(training_set.last_read);
+    std::cout << "\n";
+  }
+
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
   testMatOperation(getTransposeTest2(), "transpose test 2");

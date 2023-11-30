@@ -109,7 +109,7 @@ void zeroGradients(Cache& cache) {
   }
 }
 
-void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
+void Net::prepare_cache(const Matrix& X, int y, Cache& cache) {
   copyToTensorOfSameSize(X, cache.conv.out[-1]);
   cache.y = y;
 
@@ -129,30 +129,41 @@ void Net::prepare_cache(Matrix& X, int y, Cache& cache) {
 }
 
 void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
-  size_t period = 5000;
   float entrsum = 0;
   reader.loop_to_beg();
   zeroGradients(cache);
 
-  while(reader.read_next()) {
+  while(reader.read_next(AUGMENT)) {
     prepare_cache(reader.last_read, reader.last_lable, cache);
     forward_prop(cache);
     back_prop(cache);
 
-    if(reader.index % mini_batch == 0) {
+    if((reader.index+1) % mini_batch == 0) {
       apply_gradient(cache, reader.number_of_entries*NTHREADS*epoch + reader.index*NTHREADS); 
       zeroGradients(cache);
+      //drawConv(cache);
     }
 
     entrsum += crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
 
-    if(reader.index % period != 0) continue;
-    if(reader.index % (period*NTHREADS) == period*t_index) {
-      //drawConv(cache);
-      std::cout << " executing sample " << reader.index << " on thread " << t_index << " entropy average " << entrsum / period << "\n";
+    if((reader.index+1) % PERIOD != 0) continue;
+    if((reader.index+1) % (PERIOD*NTHREADS) == PERIOD*t_index) {
+      std::cout << " executing sample " << reader.index+1 << " on thread " << t_index << " entropy average " << entrsum / PERIOD << "\n";
     }
     entrsum = 0;
   }
+}
+
+void Net::test_no_shinanegens(MnistReader& reader, Cache& cache) {
+  size_t total_count = 0;
+  for(size_t i = 0; i < reader.number_of_entries; i++) {
+    prepare_cache(reader.images[i], reader.labels[i], cache);
+    forward_prop(cache);
+    Tensor<1>& preds = cache.dense.a[cache.dense.count -1];
+    size_t max = std::distance(preds.v, std::max_element(preds.v, preds.v + preds.size));
+    if(max == reader.labels.v[i]) total_count ++;
+  }
+  std::cout << "accuracy " << total_count / (float) reader.number_of_entries << "\n";
 }
 
 template<typename Function, typename CallBack>
@@ -172,8 +183,8 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
 void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader) {
   size_t control_size = training_reader.number_of_entries / 6;
   size_t sample_size = training_reader.number_of_entries - control_size;
-  MnistReader sample_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
-  MnistReader control_data = MnistReader(training_reader, 0, std::min<size_t>(10000, training_reader.number_of_entries));
+  MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(10000, training_reader.number_of_entries));
+  MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
 
   std::thread threads[NTHREADS-1];
 
@@ -186,14 +197,15 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
   for(int e = 0; e < epochs; e++) {
     std::cout << "epoch " << e << "\n"; 
     run_in_parallel(threads, NTHREADS, [this, e, &training_readers](int t) {
-      //training_readers[t]->shuffle();
+      training_readers[t]->shuffle();
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 
-    if(e % 1 != 0) continue;
-    std::cout << "\n";
+    test_no_shinanegens(sample_data, threadscache[0]);
     test(sample_data, const_cast<char*>("smaple data accuracy: "));
+    //test_no_shinanegens(control_data, threadscache[0]);
     test(control_data, const_cast<char*>("control data accuracy: "));
+    //test_no_shinanegens(test_reader, threadscache[0]);
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
 
@@ -201,21 +213,19 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
 }
 
 void test(Cache& cache, MnistReader& reader) {
-  reader.loop_to_beg();
-
   size_t out_shape = cache.dense.a[cache.dense.count-1].size;
   TensorT<int, 1> count(out_shape);
   int total_correct = 0;
 
-  while (reader.read_next()) {
-    copyToTensorOfSameSize(reader.last_read, cache.conv.out[-1]);
-    cache.y = reader.last_lable;
+  for(size_t i = 0; i < reader.number_of_entries; i++) {
+    copyToTensorOfSameSize(reader.images[i], cache.conv.out[-1]);
+    cache.y = reader.labels[i];
     Vector preds = forward_prop(cache);
     int max = std::distance(preds.v, std::max_element(preds.v, preds.v + preds.size));
 
-    count.v[reader.last_lable]++;
-    cache.results[reader.last_lable][max]++; 
-    if (max == reader.last_lable) total_correct++;
+    count.v[reader.labels[i]]++;
+    cache.results[reader.labels[i]][max]++; 
+    if (max == (int) reader.labels[i]) total_correct++;
   }
 
   for(size_t x = 0; x < out_shape; x++) {
@@ -224,41 +234,33 @@ void test(Cache& cache, MnistReader& reader) {
     }
   }
 
-  float percentage = static_cast<float>(total_correct) / (reader.number_of_entries + 0.00001);
-  cache.accuracy = percentage;
-  
-  //std::cout << "\ntotal accuracy: " << percentage << "\n";
-  //std::cout << "guess count\n";
-  //drawMat(results);
+  cache.total_correct = total_correct;
 }
 
 float Net::test(MnistReader& reader, char* message) {
   std::thread threads[NTHREADS-1];
 
-  size_t threads_lot = reader.number_of_entries / NTHREADS;
+  size_t threads_lot = reader.number_of_entries / (float) NTHREADS;
   MnistReader* threads_readers[NTHREADS];
   for(int t = 0; t < NTHREADS; t++) 
-    threads_readers[t] = new MnistReader(reader, t*threads_lot/NTHREADS, (t+1)*threads_lot/NTHREADS);
+    threads_readers[t] = new MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
   
-
-  float total_accuracy = 0;
+  size_t total_correct = 0;
   Tensor<2> total_results(threadscache[0].results.shape);
 
-  run_in_parallel(threads, NTHREADS, [&threads_readers, this](int t) {
+  run_in_parallel(threads, NTHREADS, [&threads_readers, this, &reader](int t) {
+      prepare_cache(reader.images[0], reader.labels[0], threadscache[t]);
     ::test(threadscache[t], *threads_readers[t]);
-  }, [this, &total_accuracy, &total_results](int t) { 
-    total_accuracy += threadscache[t].accuracy; 
+  }, [this, &total_correct, &total_results](int t) { 
+    total_correct += threadscache[t].total_correct; 
     addTens(threadscache[t].results, total_results);
   });
 
-  if(total_accuracy == total_accuracy && total_accuracy > 0) {
-    std::cout << message << total_accuracy / NTHREADS << "\n";
-    total_results * (1.0f/NTHREADS);
-    drawMat(total_results);
-  } else {
-    std::cout << message << " 0\n";  
-  }
+  std::cout << message << total_correct / (float) reader.number_of_entries << "\n";
+  total_results * (1.0f/NTHREADS);
+  drawMat(total_results);
 
-  return threadscache[0].accuracy;
+  return total_correct / (float) reader.number_of_entries;
 }
+
 

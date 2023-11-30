@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -20,6 +21,7 @@ MnistReader::MnistReader(std::string images_path, std::string labels_path, Shape
   images_path(images_path),
   labels_path(labels_path)
 {
+  srand(time(NULL));
   std::iota(permutation.v, permutation.v + permutation.size, 1);
   loop_to_beg();
 }
@@ -38,24 +40,40 @@ MnistReader::MnistReader(MnistReader& other, size_t from, size_t to):
 }
 
 void MnistReader::loop_to_beg() {
-  index = 0;
-  last_read.v = &images.v[permutation[0]*last_read.size];
-  last_lable = labels.v[permutation[0]];
+  index = -1;
+}
+
+void augment(Shape<2>& shape, float inp[], Tensor<2>& res) {
+  int arg0 = shape[0];
+  int arg1 = shape[1];
+  zero(res);
+
+  size_t yBeg = std::max<int>(0, arg0);
+  size_t xBeg = std::max<int>(0, arg1);
+  size_t yEnd = std::min<int>(res.ht, res.ht+arg0);
+  size_t xEnd = std::min<int>(res.ht, res.ht+arg1);
+
+  for(size_t y = yBeg; y < yEnd; y++) {
+    for(size_t x = xBeg; x < xEnd; x++) {
+      res.v[(y - arg0)*res.wt + x - arg1] = inp[y*res.wt + x];
+    }
+  }
 }
 
 void MnistReader::shuffle() {
   std::random_device rd;
   std::mt19937 g(rd());
   std::shuffle(permutation.beg(), permutation.end(), g);
-  loop_to_beg();
 }
 
-bool MnistReader::read_next() {
-  if(index+1 == number_of_entries) return false;
+bool MnistReader::read_next(bool do_augmentation) {
+  if(index+1 >= (int) number_of_entries) return false;
 
   index++;
-  last_read.v = &images.v[permutation[index]*last_read.size];
   last_lable = labels.v[permutation[index]];
+  
+  if(do_augmentation) augment(augmentations[rand() % 3], images.v + permutation[index] * last_read.ht*last_read.wt, last_read);
+  else copyToTensorOfSameSize(images[permutation[index]], last_read);
   return true;
 }
 

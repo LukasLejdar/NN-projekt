@@ -59,7 +59,7 @@ int main() {
   net.train(cache, training_set, 0, 0);
 
   training_set.loop_to_beg();
-  training_set.read_next();
+  training_set.read_next(false);
   zeroGradients(cache);
   net.prepare_cache(training_set.last_read, training_set.last_lable, cache);
 

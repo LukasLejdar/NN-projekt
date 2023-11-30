@@ -8,20 +8,24 @@
 #include "../mnist_reader.hpp"
 
 #define NTHREADS 8
+#define PERIOD 1000
+#define AUGMENT false 
 
 class Net {
   public:
-    size_t mini_batch = 32;
+    size_t mini_batch = 48;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
+    float regularization = 0;
 
     Net(Model& model);
 
-    void prepare_cache(Matrix& X, int y, Cache& cache);
+    void prepare_cache(const Matrix& X, int y, Cache& cache);
     void train_epochs(MnistReader& reader, int epochs, MnistReader& test_reader);
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
     float test(MnistReader& reader, char* message);
+    void test_no_shinanegens(MnistReader& reader, Cache& cache);
 
   private:
     std::mutex* dense_mtx;
