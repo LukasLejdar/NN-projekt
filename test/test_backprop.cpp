@@ -41,8 +41,8 @@ int main() {
 
   const size_t CONV_LENGTH = 2;
   Convolutional conv_layers[CONV_LENGTH] {
-    {{1,28,28}, {4,3,3}, {2,2}}, //input, kernel shape 
-    {{4,13,13}, {8,3,3}, {3,3}}, //input, kernel shape 
+    {{1,28,28}, {4,3,3}, {3,3}}, //input, kernel shape 
+    {{4,9,9}, {8,3,3}, {2,2}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 1;

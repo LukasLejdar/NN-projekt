@@ -60,13 +60,13 @@ Model::Model(size_t conv_count, Convolutional* conv_layers, size_t dense_count, 
   conv_layers(conv_layers), 
   dense_layers(dense_layers) {
     for(size_t i = 0; i < conv_count-1; i++) {
-      assert(conv_layers[i].out_shape.ht == conv_layers[i].e_shape.ht / conv_layers[i].pooling.ht );
-      assert(conv_layers[i].out_shape.wt == conv_layers[i].e_shape.wt / conv_layers[i].pooling.wt );
+      assert(conv_layers[i].out_shape.ht == ceil(conv_layers[i].e_shape.ht / (float) conv_layers[i].pooling.ht) );
+      assert(conv_layers[i].out_shape.wt == ceil(conv_layers[i].e_shape.wt / (float) conv_layers[i].pooling.wt) );
       assert(conv_layers[i].out_shape == conv_layers[i+1].in_shape);
     }
 
-    assert(conv_layers[conv_count-1].out_shape.ht == (conv_layers[conv_count-1].e_shape.ht+1) / conv_layers[conv_count-1].pooling.ht );
-    assert(conv_layers[conv_count-1].out_shape.wt == (conv_layers[conv_count-1].e_shape.wt+1) / conv_layers[conv_count-1].pooling.wt );
+    assert(conv_layers[conv_count-1].out_shape.ht == ceil(conv_layers[conv_count-1].e_shape.ht / (float) conv_layers[conv_count-1].pooling.ht) );
+    assert(conv_layers[conv_count-1].out_shape.wt == ceil(conv_layers[conv_count-1].e_shape.wt / (float) conv_layers[conv_count-1].pooling.wt) );
     assert(conv_layers[conv_count-1].out_shape.size == dense_layers[0].in_shape.size);
 
     for(size_t i = 0; i < dense_count-1; i++) {
