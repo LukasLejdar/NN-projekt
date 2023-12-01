@@ -18,7 +18,7 @@ void printVec(const Vector& m, char separator='\0');
 void printMat(const Matrix& m, char separator='\0');
 void drawMat(const Matrix& m);
 void drawKernels(const Tensor<4>& t);
-void draw3D(const Tensor<3>& t, size_t form = 0, size_t max = 7);
+void draw3D(const Tensor<3>& t, size_t form = 0, size_t max = 10);
 
 template<size_t dim1, size_t dim2>
 void copyToTensorOfSameSize(const Tensor<dim1>& from, const Tensor<dim2>& to) {

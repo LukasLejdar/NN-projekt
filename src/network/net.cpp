@@ -208,6 +208,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
 
+  prepare_cache(training_reader.images[training_readers[0]->permutation[0]], 0, threadscache[0]);
   drawConv(threadscache[0]);
 
   std::cout << "training finished" << "\n\n";
@@ -269,8 +270,24 @@ float Net::test(MnistReader& reader, char* message) {
 }
 
 void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
-    Cache& cache = threadscache[0];
-    prepare_cache(images[0], 0, cache);
+    std::thread threads[NTHREADS-1];
+    TensorT<int, 1> preds = TensorT<int, 1>(images.shape[0]);
+    for(size_t t = 0; t < NTHREADS; t++) {
+      prepare_cache(preds[0], 0, threadscache[t]);
+    }
+
+    run_in_parallel(threads, NTHREADS, [this, &images, &preds](int t) {
+      size_t end = (t == NTHREADS-1) ? images.shape[0] : (t+1)*images.shape[0] / NTHREADS;
+      Tensor<3> threads_images = images.reference(t*images.shape[0] / NTHREADS, end);
+      TensorT<int, 1> threads_preds = preds.reference(t*images.shape[0] / NTHREADS, end);
+
+      Matrix image = threads_images[0];
+      for(size_t i = 0; i < threads_images.shape[0]; i++) {
+        image.v = threads_images.v + i*images.ht*images.wt;
+        threads_preds.v[i] = predict(image, threadscache[t]);
+      }
+    }, [this](int t) { (void)t; });
+
     std::ofstream preds_file(preds_path, std::ios::trunc);
 
     if (!preds_file.is_open()) {
@@ -278,12 +295,31 @@ void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
       return;
     }
 
-    for(size_t i = 0; i < images.shape[0]; i++) {
-      preds_file << predict(images[i], cache) << "\n";
+    for(size_t i = 0; i < preds.size; i++) {
+      preds_file << preds.v[i] << "\n";
     }
 
     preds_file.close();
     std::cout << "Successfully wrote results to " << preds_path << std::endl;
+
+    //preds_file.close();
+    //std::cout << "Successfully wrote results to " << preds_path << std::endl;
+    //prepare_cache(images[0], 0, cache);
+    //std::ofstream preds_file(preds_path, std::ios::trunc);
+
+    //if (!preds_file.is_open()) {
+    //  std::cerr << "\033[48;2;255;0;0m Unable to open file " << preds_path << " \033[0m" << "\n";
+    //  return;
+    //}
+
+    //Matrix image = images[0];
+    //for(size_t i = 0; i < images.shape[0]; i++) {
+    //  image.v = images.v + i*images.ht*images.wt;
+    //  preds_file << predict(image, cache) << "\n";
+    //}
+
+    //preds_file.close();
+    //std::cout << "Successfully wrote results to " << preds_path << std::endl;
 }
 
 

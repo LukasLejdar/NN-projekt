@@ -16,8 +16,10 @@ echo "     RUNNING     "
 echo "################"
 echo -en "\n"
 
+setterm -linewrap off
 stdbuf -oL nice -n 19 ./build/net 2>&1 | tee out
-cat out > /home/x548309/out
 
 elapsed_time=$((SECONDS - start_time))
-echo "Elapsed time: $elapsed_time seconds"
+echo -en "Elapsed time: $elapsed_time seconds\n" | tee -a out
+
+cat out > /home/x548309/out
