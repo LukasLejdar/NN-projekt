@@ -43,7 +43,7 @@ Convolutional::Convolutional(const Convolutional& other):
 Convolutional::Convolutional(Shape<3> in_shape, Shape<3> k_size, Shape<2> pooling):
   k_shape(k_size[0], in_shape[0], k_size[1], k_size[2]),
   e_shape(k_size[0], in_shape.ht - k_size.ht +1, in_shape.wt - k_size.wt +1),
-  out_shape(e_shape[0], e_shape.ht/pooling.ht, e_shape.wt/pooling.wt),
+  out_shape(e_shape[0], (e_shape.ht+1)/pooling.ht, (e_shape.wt+1)/pooling.wt),
   in_shape(in_shape),
   pooling(pooling),
   k(k_shape),
@@ -65,8 +65,8 @@ Model::Model(size_t conv_count, Convolutional* conv_layers, size_t dense_count, 
       assert(conv_layers[i].out_shape == conv_layers[i+1].in_shape);
     }
 
-    assert(conv_layers[conv_count-1].out_shape.ht == conv_layers[conv_count-1].e_shape.ht / conv_layers[conv_count-1].pooling.ht );
-    assert(conv_layers[conv_count-1].out_shape.wt == conv_layers[conv_count-1].e_shape.wt / conv_layers[conv_count-1].pooling.wt );
+    assert(conv_layers[conv_count-1].out_shape.ht == (conv_layers[conv_count-1].e_shape.ht+1) / conv_layers[conv_count-1].pooling.ht );
+    assert(conv_layers[conv_count-1].out_shape.wt == (conv_layers[conv_count-1].e_shape.wt+1) / conv_layers[conv_count-1].pooling.wt );
     assert(conv_layers[conv_count-1].out_shape.size == dense_layers[0].in_shape.size);
 
     for(size_t i = 0; i < dense_count-1; i++) {

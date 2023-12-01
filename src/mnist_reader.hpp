@@ -11,6 +11,8 @@
 #include <fstream>
 #include "network/math.hpp"
 
+#define NAUGMENTATIONS 4
+
 class MnistReader {
   public:
     size_t number_of_entries;
@@ -21,7 +23,7 @@ class MnistReader {
     //Shape<2> augmentations[9] = {{0,0}, {1,0}, {1,-1},
     //                             {0,-1}, {-1,-1}, {-1,0},
     //                             {-1,1}, {0,1}, {1,1}};
-    Shape<2> augmentations[9] = {{0,0}, {1,0}, {-1,0}};
+    Shape<2> augmentations[9] = {{0,0}, {0,0}, {1,0}, {-1,0}};
 
     MnistReader(std::string images_path, std::string labels_path, Shape<2>, size_t number_of_entries);
     MnistReader(MnistReader& reader, size_t from, size_t to);

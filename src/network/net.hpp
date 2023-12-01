@@ -9,15 +9,15 @@
 
 #define NTHREADS 8
 #define PERIOD 1000
-#define AUGMENT false 
-
+#define AUGMENT true 
+ 
 class Net {
   public:
     size_t mini_batch = 48;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
-    float decay_rate2 = 0.99;
-    float regularization = 0.0;
+    float decay_rate2 = 0.999;
+    float regularization = 0.0002;
 
     Net(Model& model);
 

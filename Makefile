@@ -1,4 +1,4 @@
-OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math -DNDEBUG 
+OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math -DNDEBUG
 CFLAGS=-Wall -Wextra -pedantic -ggdb -mavx
 CC=g++
 
@@ -7,7 +7,7 @@ all: _test _benchmark _net _test_backprop _paralelism _net_debug
 
 _test: ./test/test.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS)  -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp
+	$(CC) $(CFLAGS) -o ./build/test ./test/test.cpp ./src/network/math.cpp ./src/mnist_reader.cpp
 
 _benchmark: ./test/benchmark.cpp
 	mkdir -p build

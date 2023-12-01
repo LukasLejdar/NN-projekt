@@ -81,28 +81,28 @@ void back_prop(Cache& cache) {
 void Net::apply_gradient(Cache& cache, size_t t) {
   for(size_t i = 0; i < cache.conv.count; i++) {
     conv_k_mtx[i].lock();
-    adam(cache.conv.dK[i], model.conv_layers[i].emaK, model.conv_layers[i].maK, decay_rate1, decay_rate2, t);
+    rmsProp(cache.conv.dK[i], model.conv_layers[i].emaK, decay_rate1, t);
     L2(model.conv_layers[i].k, cache.conv.dK[i], regularization, learning_rate);
     conv_k_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
     dense_w_mtx[i].lock();
-    adam(cache.dense.dW[i], model.dense_layers[i].emaW, model.dense_layers[i].maW, decay_rate1, decay_rate2, t);
+    rmsProp(cache.dense.dW[i], model.dense_layers[i].emaW, decay_rate1, t);
     L2(model.dense_layers[i].w, cache.dense.dW[i], regularization, learning_rate);
     dense_w_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.conv.count; i++) {
     conv_b_mtx[i].lock();
-    adam(cache.conv.dB[i], model.conv_layers[i].emaB, model.conv_layers[i].maB, decay_rate1, decay_rate2, t);
+    rmsProp(cache.conv.dB[i], model.conv_layers[i].emaB, decay_rate1, t);
     L2(model.conv_layers[i].b, cache.conv.dB[i], regularization, learning_rate);
     conv_b_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
     dense_b_mtx[i].lock();
-    adam(cache.dense.dB[i], model.dense_layers[i].emaB, model.dense_layers[i].maB, decay_rate1, decay_rate2, t); 
+    rmsProp(cache.dense.dB[i], model.dense_layers[i].emaB, decay_rate1, t); 
     L2(model.dense_layers[i].b, cache.dense.dB[i], regularization, learning_rate);
     dense_b_mtx[i].unlock();
   }
@@ -179,7 +179,7 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
 }
 
 void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader) {
-  size_t control_size = training_reader.number_of_entries / 6;
+  size_t control_size = training_reader.number_of_entries / 5;
   size_t sample_size = training_reader.number_of_entries - control_size;
   MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(5000, training_reader.number_of_entries));
   MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
@@ -188,9 +188,10 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
 
   //every thread has its own reader
   MnistReader* training_readers[NTHREADS];
-  for(int t = 0; t < NTHREADS; t++) {
-    training_readers[t] = new MnistReader(training_reader, t*sample_size/NTHREADS, (t+1)*sample_size/NTHREADS);
+  for(int t = 0; t < NTHREADS-1; t++) {
+    training_readers[t] = new MnistReader(training_reader, t*sample_size/NTHREADS, (t+1)*sample_size/NTHREADS); 
   }
+  training_readers[NTHREADS-1] = new MnistReader(training_reader, (NTHREADS-1)*sample_size/NTHREADS, sample_size);
 
   for(int e = 0; e < epochs; e++) {
     std::cout << "epoch " << e << "\n"; 
@@ -199,11 +200,15 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
       this->train(threadscache[t], *training_readers[t], e, t);
     }, [](int t){ (void)t; });
 
+    if(e == 8) learning_rate /= 2;
+
     test(sample_data, const_cast<char*>("smaple data accuracy: "));
     float accuracy = test(control_data, const_cast<char*>("control data accuracy: "));
-    if(accuracy > 91.5 && e > 6) return;
+    if(accuracy >= 0.919 && e > 6) return;
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
+
+  drawConv(threadscache[0]);
 
   std::cout << "training finished" << "\n\n";
 }
@@ -227,9 +232,10 @@ float Net::test(MnistReader& reader, char* message) {
 
   size_t threads_lot = reader.number_of_entries / (float) NTHREADS;
   MnistReader* threads_readers[NTHREADS];
-  for(int t = 0; t < NTHREADS; t++) 
+  for(int t = 0; t < NTHREADS; t++) {
     threads_readers[t] = new MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
-  
+  }
+  threads_readers[NTHREADS-1] = new MnistReader(reader, (NTHREADS-1)*threads_lot, reader.number_of_entries);
 
   run_in_parallel(threads, NTHREADS, [&threads_readers, this, &reader](int t) {
       prepare_cache(threads_readers[t]->images[0], 0, threadscache[t]);

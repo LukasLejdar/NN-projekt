@@ -9,6 +9,7 @@
 #include <tuple>
 #include "tensor.hpp"
 #include <immintrin.h>
+#include <iostream>
 
 #ifndef MATH_H
 #define MATH_H
@@ -80,21 +81,8 @@ void transpose(Matrix& a, Matrix& result) {
 
 template<size_t dim>
 inline void addTens(const Tensor<dim>& inp, const Tensor<dim>& res) {
-  //assert(inp.size == res.size);
-  //for(size_t i = 0; i < inp.size; i ++) {
-  //  res.v[i] += inp.v[i];
-  //}
-  size_t remaining = inp.size % 8;
-  size_t i = 0;
-
-  for (; i < inp.size - remaining; i += 8) {
-    __m256 vi = _mm256_loadu_ps(inp.v + i);
-    __m256 vr = _mm256_loadu_ps(res.v + i);
-    __m256 sum = _mm256_add_ps(vi, vr);
-    _mm256_storeu_ps(res.v + i, sum);
-  }
-
-  for (; i < inp.size; ++i) {
+  assert(inp.size == res.size);
+  for(size_t i = 0; i < inp.size; i ++) {
     res.v[i] += inp.v[i];
   }
 }
@@ -199,31 +187,8 @@ inline void correlate(Matrix& kernel, Matrix& input, Matrix& result) {
   assert(input.ht - kernel.ht + 1 == result.ht);
   assert(input.wt - kernel.wt + 1 == result.wt);
 
-  //// Check if the size is a multiple of 8 (for AVX)
-  //size_t remaining = inp.size % 8;
-  //size_t i = 0;
-
-  //// Process vectors in blocks of 8 elements
-  //for (; i < inp.size - remaining; i += 8) {
-  //  __m256 vi = _mm256_loadu_ps(inp.v + i);
-  //  __m256 vr = _mm256_loadu_ps(res.v + i);
-  //  __m256 sum = _mm256_add_ps(vi, vr);
-  //  _mm256_storeu_ps(res.v + i, sum);
-  //}
-
-  //// Process the remaining elements
-  //for (; i < inp.size; ++i) {
-  //  res.v[i] += inp.v[i];
-  //}
-  //
-  // __m256 product = _mm256_mul_ps(va, vb);
-  // _mm256_storeu_ps(result.v + i, product);
-
-  //size_t kRemaining = kernel.ht % 8;
-  //size_t lRemaining = kernel.wt % 8;
   for(size_t i = 0; i < result.ht; i++) {
     for(size_t k = 0; k < kernel.ht; k++) {
-
       for(size_t l = 0; l < kernel.wt; l++) {
         for(size_t j = 0; j < result.wt; j++) {
           result.v[i*result.wt+j] += input.v[(i+k)*input.wt+(j+l)] * kernel.v[k*kernel.wt+l];
@@ -300,32 +265,32 @@ void convolveATv(Tensor<4>& kernel, Tensor<3>& input, Tensor<3>& result) {
 inline void maxPooling(Tensor<3>& A, Shape<2>& kernel, Tensor<3>& result, TensorT<size_t, 3>& max_locations) {
   assert(A.shape[0] == result.shape[0]);
   assert(result.shape == max_locations.shape);
-  assert(result.shape.ht == A.shape.ht/kernel.ht);
-  assert(result.shape.wt == A.shape.wt/kernel.wt);
+  assert(result.ht  == std::ceil(A.ht / (float) kernel.ht));
+  assert(result.wt  == std::ceil(A.wt / (float) kernel.wt));
 
-  for(size_t k = 0; k < A.shape[0]; k++) {
-    for(size_t y = 0; y < result.ht; y++) {
-      for(size_t x = 0; x < result.wt; x++) {
-        size_t Ay = y*kernel.ht;
-        size_t Ax = x*kernel.wt;
-        size_t beg = k*A.wt*A.ht + Ay*A.wt + Ax;
-        size_t location = 0;
-        float* Av = &A.v[beg];
-        float max = A.v[beg];
+  zero(result);
 
-        for(size_t i = 0; i < kernel.ht; i++) {
-          for(size_t j = 0; j < kernel.wt; j++) {
-            size_t _location = i*A.wt +j;
-            float next = Av[_location];
-            if(max < next) {
-              max = next;
-              location = _location;
+  for(size_t n = 0; n < A.shape[0]; n++) {
+    float* Av = A.v + n*A.ht*A.wt;
+    float* resv = result.v + n*result.ht*result.wt;
+    size_t* maxv = max_locations.v + n*result.ht*result.wt;
+    size_t beg = n*A.ht*A.wt;
+  
+    int y = -1;
+    for(size_t i = 0; i < result.ht; i++) {
+      for(size_t k = 0; k < kernel.ht && y+1 < (int) A.ht; k++)  {
+        y++;
+        int x = -1;
+        for(size_t j = 0; j < result.wt; j++) {
+          for(size_t l = 0; l < kernel.wt && x+1 < (int) A.wt; l++) {
+            x++;
+
+            if(Av[y*A.wt + x] > resv[i*result.wt + j]) {
+              maxv[i*result.wt + j] = beg + y*A.wt + x;
+              resv[i*result.wt + j] = Av[y*A.wt + x];
             }
           }
         }
-
-        result.v[k*result.ht*result.wt + y*result.wt + x] = max;
-        max_locations.v[k*result.ht*result.wt + y*result.wt + x] = beg + location;
       }
     }
   }

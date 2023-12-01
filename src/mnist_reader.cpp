@@ -72,7 +72,7 @@ bool MnistReader::read_next(bool do_augmentation) {
   index++;
   last_lable = labels.v[permutation[index]];
   
-  if(do_augmentation) augment(augmentations[rand() % 3], images.v + permutation[index] * last_read.ht*last_read.wt, last_read);
+  if(do_augmentation) augment(augmentations[rand() % NAUGMENTATIONS], images.v + permutation[index] * last_read.ht*last_read.wt, last_read);
   else copyToTensorOfSameSize(images[permutation[index]], last_read);
   return true;
 }

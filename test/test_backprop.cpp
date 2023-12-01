@@ -42,12 +42,11 @@ int main() {
   const size_t CONV_LENGTH = 2;
   Convolutional conv_layers[CONV_LENGTH] {
     {{1,28,28}, {4,3,3}, {2,2}}, //input, kernel shape 
-    {{4,13,13}, {8,3,3}, {1,1}}, //input, kernel shape 
+    {{4,13,13}, {8,3,3}, {3,3}}, //input, kernel shape 
   };
 
-  const size_t DENSE_LENGTH = 2;
+  const size_t DENSE_LENGTH = 1;
   Dense dense_layers[DENSE_LENGTH] = {
-    {968, 128},
     {128, 10},
   };
 

@@ -87,24 +87,38 @@ void benchMatMul4() {
 }
 
 void benchCorrelate() {
-  Tensor<4> kernels(5,1,30,30);
+  Tensor<4> kernels(5,1,3,3);
   Tensor<3> input(1,1024, 1024);
-  Tensor<3> result(5,1024-29,1024-29);
+  Tensor<3> result(5,1024-2,1024-2);
   randomize(kernels);
   randomize(input);
 
   Timer timer = Timer("bench correlate: %0.3f ms \n");
   correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
+  correlateAv(kernels, input, result);
 }
 
 void benchConv() {
-  Tensor<4> kernels(5,1,30,30);
-  Tensor<3> input(5,1024-29,1024-29);
+  Tensor<4> kernels(5,1,3,3);
+  Tensor<3> input(5,1024-2,1024-2);
   Tensor<3> result(1,1024, 1024);
   randomize(kernels);
   randomize(input);
 
   Timer timer = Timer("bench convolve: %0.3f ms \n");
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
+  convolveATv(kernels, input, result);
   convolveATv(kernels, input, result);
 }
 

@@ -65,14 +65,14 @@ inline void adam(const Tensor<dim>& dw, const Tensor<dim>& ema, const Tensor<dim
 }
 
 template<size_t dim>
-inline void rmsProp(const Tensor<dim>& dw, const Tensor<dim>& ema, float learning_rate, float decay_rate, size_t t) {
+inline void rmsProp(const Tensor<dim>& dw, const Tensor<dim>& ema, float decay_rate, size_t t) {
     assert(dw.size == ema.size);
 
     for(size_t i = 0; i < dw.size; i++) {
       ema.v[i] =  decay_rate*ema.v[i] + (1-decay_rate)*pow(dw.v[i], 2);
       ema.v[i] = ema.v[i] / (1 - pow(decay_rate, t));
 
-      dw.v[i] = dw.v[i]* -learning_rate/(sqrt(ema.v[i]) + 0.00000001);
+      dw.v[i] = dw.v[i] / (sqrt(ema.v[i]) + 0.00000001);
     }
 }
 

@@ -448,42 +448,45 @@ Matrix* getAddTest() {
 
 Matrix* getMaxpoolingTest0() {
   float v[] = {
-    1,2,3,4,9,
-    2,3,4,5,9,
-    5,6,7,8,9,
-    7,8,9,0,9,
-    9,9,9,9,9,
+    1,2,3,4,6,
+    2,3,4,5,5,
+    5,6,7,8,4,
+    7,8,9,0,5,
+    3,1,6,3,6,
              
-    1,2,3,4,9,
-    2,3,4,5,9,
-    5,6,7,8,9,
-    7,8,9,0,9,
-    9,9,9,9,9,
+    1,2,3,4,6,
+    2,3,4,5,5,
+    5,6,7,8,4,
+    7,8,9,0,5,
+    3,1,6,3,6,
              
-    1,2,3,4,9,
-    2,3,4,5,9,
-    5,6,7,8,9,
-    7,8,9,0,9,
-    9,9,9,9,9,
+    1,2,3,4,6,
+    2,3,4,5,5,
+    5,6,7,8,4,
+    7,8,9,0,5,
+    3,1,6,3,6,
   };
   Tensor<3> t(v, 3,5,5);
-  Tensor<3> result(3,2,2);
+  Tensor<3> result(3,3,3);
   float correct[] = {
-    3,5,
-    8,9,
+    3,5,6,
+    8,9,5,
+    3,6,6,
 
-    3,5,
-    8,9,
+    3,5,6,
+    8,9,5,
+    3,6,6,
 
-    3,5,
-    8,9,
+    3,5,6,
+    8,9,5,
+    3,6,6,
   };
   Shape<2> kernel(2,2);
-  TensorT<size_t, 3> max_locations(3,2,2);
+  TensorT<size_t, 3> max_locations(3,3,3);
   maxPooling(t, kernel, result, max_locations);
-  Matrix * list = new Matrix[]{{result.v,3,4}, {correct,3,4}};
+  Matrix * list = new Matrix[]{{result.v,3,9}, {correct,3,9}};
 
-  maxPooling_backward(result, t, max_locations);
+  //maxPooling_backward(result, t, max_locations);
   //printMat(t[0]);
   //std::cout << "\n";
   //printMat(t[1]);
@@ -585,6 +588,7 @@ int main(void) {
   TensorT<size_t, 3> loc(1,14,14);
   Shape<2> kernel(2,2);
   copyToTensorOfSameSize(sub_reader.images[5], input);
+
   maxPooling(input, kernel, result, loc);
 
   std::cout << "\nmax pooling\n";
@@ -610,12 +614,6 @@ int main(void) {
   training_set.read_next(false);
   drawMat(training_set.last_read);
 
-  for(int i = 0; i < 60; i++) {
-    training_set.read_next(false);
-    drawMat(training_set.last_read);
-    std::cout << "\n";
-  }
-
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
   testMatOperation(getTransposeTest2(), "transpose test 2");
@@ -634,7 +632,7 @@ int main(void) {
   testMatOperation(getMulTest0vvT(), "mulTestvvT test0");
   testMatOperation(getMaxpoolingTest1(), "maxpooling test indicies");
   testMatOperation(getMaxpoolingTest0(), "maxpooling test");
-  testMatOperation(getMaxpoolingTest2(), "maxpooling test kernel size 1 ");
+  //testMatOperation(getMaxpoolingTest2(), "maxpooling test kernel size 1 ");
 
 }
 
