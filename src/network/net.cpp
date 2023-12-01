@@ -178,7 +178,7 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
   }
 }
 
-void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader) {
+void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader, float threashold) {
   size_t control_size = training_reader.number_of_entries / 5;
   size_t sample_size = training_reader.number_of_entries - control_size;
   MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(5000, training_reader.number_of_entries));
@@ -204,7 +204,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
 
     test(sample_data, const_cast<char*>("smaple data accuracy: "));
     float accuracy = test(control_data, const_cast<char*>("control data accuracy: "));
-    if(accuracy >= 0.919 && e > 6) return;
+    if(accuracy >= threashold) return;
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
 
@@ -301,25 +301,6 @@ void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
 
     preds_file.close();
     std::cout << "Successfully wrote results to " << preds_path << std::endl;
-
-    //preds_file.close();
-    //std::cout << "Successfully wrote results to " << preds_path << std::endl;
-    //prepare_cache(images[0], 0, cache);
-    //std::ofstream preds_file(preds_path, std::ios::trunc);
-
-    //if (!preds_file.is_open()) {
-    //  std::cerr << "\033[48;2;255;0;0m Unable to open file " << preds_path << " \033[0m" << "\n";
-    //  return;
-    //}
-
-    //Matrix image = images[0];
-    //for(size_t i = 0; i < images.shape[0]; i++) {
-    //  image.v = images.v + i*images.ht*images.wt;
-    //  preds_file << predict(image, cache) << "\n";
-    //}
-
-    //preds_file.close();
-    //std::cout << "Successfully wrote results to " << preds_path << std::endl;
 }
 
 
