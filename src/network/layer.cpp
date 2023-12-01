@@ -43,7 +43,7 @@ Convolutional::Convolutional(const Convolutional& other):
 Convolutional::Convolutional(Shape<3> in_shape, Shape<3> k_size, Shape<2> pooling):
   k_shape(k_size[0], in_shape[0], k_size[1], k_size[2]),
   e_shape(k_size[0], in_shape.ht - k_size.ht +1, in_shape.wt - k_size.wt +1),
-  out_shape(e_shape[0], (e_shape.ht+1)/pooling.ht, (e_shape.wt+1)/pooling.wt),
+  out_shape(e_shape[0], ceil(e_shape.ht / (float) pooling.ht), ceil(e_shape.wt / (float) pooling.wt)),
   in_shape(in_shape),
   pooling(pooling),
   k(k_shape),
