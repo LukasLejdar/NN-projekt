@@ -209,6 +209,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
     }, [](int t){ (void)t; });
 
     if(e == 8) learning_rate /= 2;
+    if(e < 10) continue;
 
     test(sample_readers[0], const_cast<char*>("smaple data accuracy: "));
     float accuracy = test(control_reader, const_cast<char*>("control data accuracy: "));
