@@ -80,6 +80,8 @@ void initialize_cache(Cache& cache, Model& model) {
   //cache.conv.~ConvCache();
   //cache.dense.~DenseCache();
 
+  Tensor<3>* conv_out = new Tensor<3>[model.conv_count+1];
+  cache.conv.out = conv_out+1; // out[-1] is a copy of input
   cache.conv.count = model.conv_count;
   cache.conv.a = new Tensor<3>[model.conv_count];
   cache.conv.dA = new Tensor<3>[model.conv_count];
@@ -87,10 +89,10 @@ void initialize_cache(Cache& cache, Model& model) {
   cache.conv.dB = new Tensor<3>[model.conv_count];
   cache.conv.k = new Tensor<4>[model.conv_count];
   cache.conv.dK = new Tensor<4>[model.conv_count];
-  cache.conv.out = new Tensor<3>[model.conv_count+1]+1; // out[-1] is a copy of input
   cache.conv.dOut = new Tensor<3>[model.conv_count];
   cache.conv.pooling = new Shape<2>[model.conv_count];
   cache.conv.loc = new TensorT<size_t, 3>[model.conv_count];
+
 
   cache.dense.count = model.dense_count;
   cache.dense.a = new Vector[model.dense_count+1]+1; // a[-1] is reshaped output of conv (dense.a[-1].v points to conv.out[count-1].v)
@@ -122,7 +124,7 @@ void initialize_cache(Cache& cache, Model& model) {
     new (&cache.dense.dW[i]) Matrix(model.dense_layers[i].w_shape);
   }
 
-  new (&cache.conv.out[-1]) Tensor<3>(model.conv_layers[0].in_shape); // input
+  new (&conv_out[0]) Tensor<3>(model.conv_layers[0].in_shape); // input
   new (&cache.results) Matrix(model.dense_layers[model.dense_count-1].out_shape.size, model.dense_layers[model.dense_count-1].out_shape.size);
   new (&cache.labels_count) TensorT<int, 1>(model.dense_layers[model.dense_count-1].out_shape);
 
