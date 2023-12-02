@@ -46,9 +46,9 @@ struct Model {
 struct DenseCache {
   size_t count;
 
-  Vector *a, *dA;
-  Vector *b, *dB;
-  Matrix *w, *dW;
+  Vector *a = nullptr, *dA = nullptr;
+  Vector *b = nullptr, *dB = nullptr;
+  Matrix *w = nullptr, *dW = nullptr;
 
   ~DenseCache() {
     delete [] (a-1); delete [] (dA-1);
@@ -60,12 +60,12 @@ struct DenseCache {
 struct ConvCache {
   size_t count;
 
-  Tensor<3> *a, *dA;
-  Tensor<3> *b, *dB;
-  Tensor<4> *k, *dK;
-  Tensor<3> *out, *dOut;
-  Shape<2>* pooling;
-  TensorT<size_t, 3> *loc;
+  Tensor<3> *a = nullptr, *dA = nullptr;
+  Tensor<3> *b = nullptr, *dB = nullptr;
+  Tensor<4> *k = nullptr, *dK = nullptr;
+  Tensor<3> *out = nullptr, *dOut = nullptr;
+  Shape<2>* pooling = nullptr;
+  TensorT<size_t, 3> *loc = nullptr;
 
   ~ConvCache() {
     delete [] a; delete [] dA;

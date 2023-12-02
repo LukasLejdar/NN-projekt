@@ -61,13 +61,13 @@ struct Shape<dim, std::enable_if_t<(dim > 1)>> {
     size = multiply(dims, dim);
   }
 
-  size_t operator[](size_t index) {
-    assert(index < dim);
+  size_t operator[](int index) {
+    assert((size_t) index < dim);
     return dimensions[index];
   }
 
-  size_t operator[](size_t index) const {
-    assert(index < dim);
+  size_t operator[](int index) const {
+    assert((size_t) index < dim);
     return dimensions[index];
   }
 
@@ -149,20 +149,22 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
     shape.dimensions[0] = size;
   }
 
-  TensorT reference(size_t from, size_t to) const {
-    assert(from <= to && to <= size);
+  TensorT reference(int from=0, int to=-1) const {
+    if(to == -1) to = shape[0];
+    assert(from <= to && (size_t) to <= size);
+
     TensorT new_tensor(true);
     new_tensor.shape = Shape(shape);
     new_tensor.shape.dimensions[0] = to - from;
     new_tensor.shape.size = multiply(new_tensor.dimensions, dim);
 
-    new_tensor.v = &v[from*multiply(dimensions+1, dim-1)];
+    new_tensor.v = v + from*multiply(dimensions+1, dim-1);
     return new_tensor;
   }
 
-  TensorT<T, dim-1> operator[](size_t index) const {
-    //std::cout << "[] operator on " << ht << " - " << wt << "\n";
-    assert(index < size);
+  TensorT<T, dim-1> operator[](int index) const {
+    assert((size_t) index < shape[0]);
+
     TensorT<T, dim-1> new_tensor(true);
     new_tensor.shape.reshape(dimensions+1);
     new_tensor.v = &v[index*new_tensor.size];
@@ -197,17 +199,6 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
     std::swap(other.is_subtensor, is_subtensor);
   }
 
-  TensorT& operator=(const TensorT& other) {
-    TensorT temp = TensorT(other);
-    swap(temp);
-    return *this;
-  }
-
-  TensorT& operator=(TensorT& other) {
-    swap(other);
-    return *this;
-  }
-
   void set_is_subtensor(bool value) {
     is_subtensor = value;
   }
@@ -220,32 +211,48 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
 
 template<size_t dim>
 struct Shape<dim, std::enable_if_t<(dim == 1)>> {
+  size_t dimensions[dim];
   size_t size;
 
-  Shape(): size(0) {} 
-  Shape(const Shape& other): size(other.size) {}
-  Shape(size_t size): size(size) {}
+  Shape(): dimensions{}, size(0) {} 
+  Shape(const Shape& other): dimensions(), size(other.size) {
+    std::copy(other.dimensions, other.dimensions + dim, dimensions);
+  }
+
+  Shape(size_t size): 
+    dimensions{size}, 
+    size(size) {} 
 
   void swap(Shape& other) {
     std::swap(size, other.size);
+    std::swap_ranges(dimensions, dimensions+dim, other.dimensions);
   }
 
   void reshape(const size_t dims[dim]) {
+    dimensions[0] = dims[0];
     size = dims[0];
   }
 
-  size_t operator[](size_t index) {
+  size_t operator[](int index) {
     assert(index == 0);
+    (void) index;
     return size;
   }
 
-  size_t operator[](size_t index) const {
+  size_t operator[](int index) const {
     assert(index == 0);
+    (void) index;
     return size;
+  }
+
+  Shape& operator=(const Shape& other) {
+    Shape temp(other);
+    swap(temp);
+    return *this;
   }
 
   bool operator==(const Shape& other) const {
-    return size == other.size;
+    return other.size == size;
   }
 };
 
@@ -295,16 +302,20 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     std::copy(other_v, other_v+size, v); 
   }
 
-  TensorT reference(size_t from, size_t to) const {
-    assert(from <= to && to <= size);
+  TensorT reference(int from = 0, int to = -1) const {
+    if(to == -1) to = shape[0];
+    assert(from <= to && (size_t) to <= size);
+
     TensorT new_tensor(true);
-    new_tensor.shape.size = from - to;
-    new_tensor.v = &v[from];
+    new_tensor.shape.dimensions[0] = to - from;
+    new_tensor.shape.size = to - from;
+    new_tensor.v = v + from;
+
     return new_tensor;
   }
 
-  T& operator[](size_t index) const {
-    assert(index < size);
+  T& operator[](int index) const {
+    assert((size_t) index < shape[0]);
     return v[index];
   }
 
@@ -317,18 +328,6 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     shape.swap(other.shape);
     std::swap(other.v, v);
     std::swap(other.is_subtensor, is_subtensor);
-  }
-
-  TensorT& operator=(const TensorT& other) {
-    TensorT temp = TensorT(other);
-    swap(temp);
-    return *this;
-  }
-
-  TensorT& operator=(TensorT& other) {
-    other.is_subtensor;
-    swap(other);
-    return *this;
   }
 
   void set_is_subtensor(bool value) {

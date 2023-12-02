@@ -1,5 +1,6 @@
 #include "layer.hpp"
 #include "math.hpp"
+#include <algorithm>
 #include <cassert>
 #include <string>
 
@@ -76,6 +77,9 @@ Model::Model(size_t conv_count, Convolutional* conv_layers, size_t dense_count, 
 
 
 void initialize_cache(Cache& cache, Model& model) {
+  //cache.conv.~ConvCache();
+  //cache.dense.~DenseCache();
+
   cache.conv.count = model.conv_count;
   cache.conv.a = new Tensor<3>[model.conv_count];
   cache.conv.dA = new Tensor<3>[model.conv_count];
@@ -97,32 +101,33 @@ void initialize_cache(Cache& cache, Model& model) {
   cache.dense.dW = new Matrix[model.dense_count];
 
   for(size_t i = 0; i < model.conv_count; i++) {
-    cache.conv.a[i] = Tensor<3>(model.conv_layers[i].e_shape); 
-    cache.conv.dA[i] = Tensor<3>(model.conv_layers[i].e_shape);
-    cache.conv.b[i] = Tensor<3>(model.conv_layers[i].e_shape); 
-    cache.conv.dB[i] = Tensor<3>(model.conv_layers[i].e_shape);
-    cache.conv.k[i] = Tensor<4>(model.conv_layers[i].k_shape); 
-    cache.conv.dK[i] = Tensor<4>(model.conv_layers[i].k_shape);
-    cache.conv.out[i] = Tensor<3>(model.conv_layers[i].out_shape);
-    cache.conv.dOut[i] = Tensor<3>(model.conv_layers[i].out_shape);
-    cache.conv.pooling[i] = Shape<2>(model.conv_layers[i].pooling);
-    cache.conv.loc[i] = TensorT<size_t, 3>(model.conv_layers[i].out_shape);
+    new (&cache.conv.a[i]) Tensor<3>(model.conv_layers[i].e_shape); 
+    new (&cache.conv.dA[i]) Tensor<3>(model.conv_layers[i].e_shape);
+    new (&cache.conv.b[i]) Tensor<3>(model.conv_layers[i].e_shape); 
+    new (&cache.conv.dB[i]) Tensor<3>(model.conv_layers[i].e_shape);
+    new (&cache.conv.k[i]) Tensor<4>(model.conv_layers[i].k_shape); 
+    new (&cache.conv.dK[i]) Tensor<4>(model.conv_layers[i].k_shape);
+    new (&cache.conv.out[i]) Tensor<3>(model.conv_layers[i].out_shape);
+    new (&cache.conv.dOut[i]) Tensor<3>(model.conv_layers[i].out_shape);
+    new (&cache.conv.pooling[i]) Shape<2>(model.conv_layers[i].pooling);
+    new (&cache.conv.loc[i]) TensorT<size_t, 3>(model.conv_layers[i].out_shape);
   }
 
   for(size_t i = 0; i < model.dense_count; i++) {
-    cache.dense.a[i] = Vector(model.dense_layers[i].out_shape); 
-    cache.dense.dA[i] = Vector(model.dense_layers[i].out_shape);
-    cache.dense.b[i] = Vector(model.dense_layers[i].out_shape); 
-    cache.dense.dB[i] = Vector(model.dense_layers[i].out_shape);
-    cache.dense.w[i] = Matrix(model.dense_layers[i].w_shape); 
-    cache.dense.dW[i] = Matrix(model.dense_layers[i].w_shape);
+    new (&cache.dense.a[i]) Vector(model.dense_layers[i].out_shape); 
+    new (&cache.dense.dA[i]) Vector(model.dense_layers[i].out_shape);
+    new (&cache.dense.b[i]) Vector(model.dense_layers[i].out_shape); 
+    new (&cache.dense.dB[i]) Vector(model.dense_layers[i].out_shape);
+    new (&cache.dense.w[i]) Matrix(model.dense_layers[i].w_shape); 
+    new (&cache.dense.dW[i]) Matrix(model.dense_layers[i].w_shape);
   }
 
-  cache.conv.out[-1] = Tensor<3>(model.conv_layers[0].in_shape); // input
+  new (&cache.conv.out[-1]) Tensor<3>(model.conv_layers[0].in_shape); // input
+  new (&cache.results) Matrix(model.dense_layers[model.dense_count-1].out_shape.size, model.dense_layers[model.dense_count-1].out_shape.size);
+  new (&cache.labels_count) TensorT<int, 1>(model.dense_layers[model.dense_count-1].out_shape);
+
   cache.conv.out[cache.conv.count-1].vectorize(cache.dense.a[-1]);
   cache.conv.dOut[cache.conv.count-1].vectorize(cache.dense.dA[-1]);
-  cache.results = Matrix(model.dense_layers[model.dense_count-1].out_shape.size, model.dense_layers[model.dense_count-1].out_shape.size);
-  cache.labels_count = TensorT<int, 1>(model.dense_layers[model.dense_count-1].out_shape);
 }
 
 void Model::randomize() const {
