@@ -120,20 +120,28 @@ void zeroGradients(Cache& cache) {
   }
 }
 
-void Net::prepare_cache(const Matrix& X, int y, Cache& cache) {
-  copyToTensorOfSameSize(X, cache.conv.out[-1]);
-  cache.y = y;
+void Net::copy_model_to_cache(Cache& cache) {
 
   for(size_t i = 0; i < cache.conv.count; i++) {
     conv_k_mtx[i].lock();
     copyToTensorOfSameSize(model.conv_layers[i].k, cache.conv.k[i]);
-    copyToTensorOfSameSize(model.conv_layers[i].b, cache.conv.b[i]);
     conv_k_mtx[i].unlock();
+  }
+
+  for(size_t i = 0; i < cache.conv.count; i++) {
+    conv_b_mtx[i].lock();
+    copyToTensorOfSameSize(model.conv_layers[i].b, cache.conv.b[i]);
+    conv_b_mtx[i].unlock();
+  }
+
+  for(size_t i = 0; i < cache.dense.count; i++) {
+    dense_w_mtx[i].lock();
+    copyToTensorOfSameSize(model.dense_layers[i].w, cache.dense.w[i]);
+    dense_w_mtx[i].unlock();
   }
 
   for(size_t i = 0; i < cache.dense.count; i++) {
     dense_b_mtx[i].lock();
-    copyToTensorOfSameSize(model.dense_layers[i].w, cache.dense.w[i]);
     copyToTensorOfSameSize(model.dense_layers[i].b, cache.dense.b[i]);
     dense_b_mtx[i].unlock();
   }
@@ -144,14 +152,14 @@ void Net::train(Cache& cache, MnistReader& reader, int epoch, int t_index) {
   reader.loop_to_beg();
   zeroGradients(cache);
 
-  while(reader.read_next(AUGMENT)) {
-    prepare_cache(reader.last_read, reader.last_lable, cache);
+  while(reader.read_next(AUGMENT, cache.conv.out[-1], cache.y)) {
     forward_prop(cache);
     back_prop(cache);
 
     if((reader.index+1) % mini_batch == 0) {
-      apply_gradient(cache, reader.number_of_entries*NTHREADS*epoch + reader.index*NTHREADS); 
+      apply_gradient(cache, (reader.number_of_entries*epoch + reader.index)*NTHREADS); 
       zeroGradients(cache);
+      copy_model_to_cache(cache);
     }
 
     entrsum += crossEntropy(cache.dense.a[cache.dense.count-1].v, cache.y);
@@ -179,36 +187,37 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
 }
 
 void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader, float threashold) {
+  std::thread threads[NTHREADS-1];
+  training_reader.shuffle();
+
   size_t control_size = training_reader.number_of_entries / 5;
   size_t sample_size = training_reader.number_of_entries - control_size;
-  MnistReader sample_data = MnistReader(training_reader, 0, std::min<size_t>(5000, training_reader.number_of_entries));
-  MnistReader control_data = MnistReader(training_reader, sample_size, training_reader.number_of_entries);
-
-  std::thread threads[NTHREADS-1];
+  MnistReader sample_reader(training_reader, 0, sample_size);
+  MnistReader control_reader(training_reader, sample_size, training_reader.number_of_entries);
 
   //every thread has its own reader
-  MnistReader* training_readers[NTHREADS];
-  for(int t = 0; t < NTHREADS-1; t++) {
-    training_readers[t] = new MnistReader(training_reader, t*sample_size/NTHREADS, (t+1)*sample_size/NTHREADS); 
+  MnistReader sample_readers[NTHREADS];
+  for(int t = 0; t < NTHREADS; t++) {
+    new (&sample_readers[t]) MnistReader(sample_reader, t * sample_size / NTHREADS, (t+1) * sample_size / NTHREADS); 
   }
-  training_readers[NTHREADS-1] = new MnistReader(training_reader, (NTHREADS-1)*sample_size/NTHREADS, sample_size);
 
   for(int e = 0; e < epochs; e++) {
     std::cout << "epoch " << e << "\n"; 
-    run_in_parallel(threads, NTHREADS, [this, e, &training_readers](int t) {
-      training_readers[t]->shuffle();
-      this->train(threadscache[t], *training_readers[t], e, t);
+    sample_reader.shuffle();
+    run_in_parallel(threads, NTHREADS, [this, e, &sample_readers](int t) {
+      this->train(threadscache[t], sample_readers[t], e, t);
     }, [](int t){ (void)t; });
 
     if(e == 8) learning_rate /= 2;
 
-    test(sample_data, const_cast<char*>("smaple data accuracy: "));
-    float accuracy = test(control_data, const_cast<char*>("control data accuracy: "));
+    test(sample_readers[0], const_cast<char*>("smaple data accuracy: "));
+    float accuracy = test(control_reader, const_cast<char*>("control data accuracy: "));
     if(accuracy >= threashold) return;
     test(test_reader, const_cast<char*>("test data accuracy: "));
   }
 
-  prepare_cache(training_reader.images[training_readers[0]->permutation[0]], 0, threadscache[0]);
+  forward_prop(threadscache[0]);
+  back_prop(threadscache[0]);
   drawConv(threadscache[0]);
 
   std::cout << "training finished" << "\n\n";
@@ -217,9 +226,7 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
 
 // Tests ----------------------------------------------------------------------
 
-
-int predict(const Matrix& image, Cache& cache) {
-  copyToTensorOfSameSize(image, cache.conv.out[-1]);
+int predict(Cache& cache) {
   Vector preds = forward_prop(cache);
   return std::distance(preds.v, std::max_element(preds.v, preds.v + preds.size));
 }
@@ -232,21 +239,23 @@ float Net::test(MnistReader& reader, char* message) {
   TensorT<int, 1> total_labels_count(out_shape);
 
   size_t threads_lot = reader.number_of_entries / (float) NTHREADS;
-  MnistReader* threads_readers[NTHREADS];
+  MnistReader threads_readers[NTHREADS];
   for(int t = 0; t < NTHREADS; t++) {
-    threads_readers[t] = new MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
+    new(&threads_readers[t])  MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
   }
-  threads_readers[NTHREADS-1] = new MnistReader(reader, (NTHREADS-1)*threads_lot, reader.number_of_entries);
 
   run_in_parallel(threads, NTHREADS, [&threads_readers, this, &reader](int t) {
-      prepare_cache(threads_readers[t]->images[0], 0, threadscache[t]);
-      zero(threadscache[t].labels_count);
-      zero(threadscache[t].results);
+      Cache& cache = threadscache[t];
 
-      for(size_t i = 0; i < threads_readers[t]->number_of_entries; i++) {
-        int pred = predict(threads_readers[t]->images[i], threadscache[t]);
-        threadscache[t].labels_count.v[threads_readers[t]->labels[i]]++;
-        threadscache[t].results[threads_readers[t]->labels[i]][pred]++; 
+      threads_readers[t].loop_to_beg();
+      copy_model_to_cache(cache);
+      zero(cache.labels_count);
+      zero(cache.results);
+
+      while(threads_readers[t].read_next(false, cache.conv.out[-1], cache.y)) {
+        int pred = predict(cache);
+        cache.labels_count.v[cache.y]++;
+        cache.results[cache.y][pred]++; 
       }
   }, [this, &total_results, &total_labels_count](int t) { 
       addTens(threadscache[t].results, total_results);
@@ -273,7 +282,7 @@ void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
     std::thread threads[NTHREADS-1];
     TensorT<int, 1> preds = TensorT<int, 1>(images.shape[0]);
     for(size_t t = 0; t < NTHREADS; t++) {
-      prepare_cache(preds[0], 0, threadscache[t]);
+      copy_model_to_cache(threadscache[t]);
     }
 
     run_in_parallel(threads, NTHREADS, [this, &images, &preds](int t) {
@@ -281,10 +290,9 @@ void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
       Tensor<3> threads_images = images.reference(t*images.shape[0] / NTHREADS, end);
       TensorT<int, 1> threads_preds = preds.reference(t*images.shape[0] / NTHREADS, end);
 
-      Matrix image = threads_images[0];
       for(size_t i = 0; i < threads_images.shape[0]; i++) {
-        image.v = threads_images.v + i*images.ht*images.wt;
-        threads_preds.v[i] = predict(image, threadscache[t]);
+        copyToTensorOfSameSize(threads_images[i], threadscache[t].conv.out[-1]);
+        threads_preds.v[i] = predict(threadscache[t]);
       }
     }, [this](int t) { (void)t; });
 

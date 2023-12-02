@@ -21,7 +21,7 @@ class Net {
 
     Net(Model& model);
 
-    void prepare_cache(const Matrix& X, int y, Cache& cache);
+    void copy_model_to_cache(Cache& cache);
     void train_epochs(MnistReader& reader, int epochs, MnistReader& test_reader, float threashold);
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
     float test(MnistReader& reader, char* message);

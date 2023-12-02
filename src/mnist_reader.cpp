@@ -13,29 +13,30 @@
 #include <numeric>
 
 MnistReader::MnistReader(std::string images_path, std::string labels_path, Shape<2> shape, size_t number_of_entries) : 
-  number_of_entries(number_of_entries),
   images(readMnistImagesCsv(images_path, shape, number_of_entries)),
   labels(readMnistLablesCsv(labels_path, number_of_entries)),
+  images_path(images_path),
+  labels_path(labels_path),
+  number_of_entries(number_of_entries),
   permutation(number_of_entries),
   last_read(images[0]),
-  images_path(images_path),
-  labels_path(labels_path)
+  last_label(labels[0])
 {
   srand(time(NULL));
   std::iota(permutation.v, permutation.v + permutation.size, 1);
   loop_to_beg();
 }
 
-MnistReader::MnistReader(MnistReader& other, size_t from, size_t to): 
-  number_of_entries(to - from),
-  images(other.images.reference(from, to)),
-  labels(other.labels.reference(from, to)),
-  permutation(TensorT<size_t, 1>(to - from)),
-  last_read(images[0]),
+MnistReader::MnistReader(const MnistReader& other, size_t from, size_t to): 
+  images(other.images.reference()),
+  labels(other.labels.reference()),
   images_path(other.images_path),
-  labels_path(other.labels_path)
+  labels_path(other.labels_path),
+  number_of_entries(to - from),
+  permutation(other.permutation.reference(from, to)),
+  last_read(images[permutation[0]]),
+  last_label(labels[permutation[0]])
 {
-  std::iota(permutation.v, permutation.v + permutation.size, 1);
   loop_to_beg();
 }
 
@@ -43,38 +44,10 @@ void MnistReader::loop_to_beg() {
   index = -1;
 }
 
-void augment(Shape<2>& shape, float inp[], Tensor<2>& res) {
-  int arg0 = shape[0];
-  int arg1 = shape[1];
-  zero(res);
-
-  size_t yBeg = std::max<int>(0, arg0);
-  size_t xBeg = std::max<int>(0, arg1);
-  size_t yEnd = std::min<int>(res.ht, res.ht+arg0);
-  size_t xEnd = std::min<int>(res.ht, res.ht+arg1);
-
-  for(size_t y = yBeg; y < yEnd; y++) {
-    for(size_t x = xBeg; x < xEnd; x++) {
-      res.v[(y - arg0)*res.wt + x - arg1] = inp[y*res.wt + x];
-    }
-  }
-}
-
 void MnistReader::shuffle() {
   std::random_device rd;
   std::mt19937 g(rd());
   std::shuffle(permutation.beg(), permutation.end(), g);
-}
-
-bool MnistReader::read_next(bool do_augmentation) {
-  if(index+1 >= (int) number_of_entries) return false;
-
-  index++;
-  last_lable = labels.v[permutation[index]];
-  
-  if(do_augmentation) augment(augmentations[rand() % NAUGMENTATIONS], images.v + permutation[index] * last_read.ht*last_read.wt, last_read);
-  else copyToTensorOfSameSize(images[permutation[index]], last_read);
-  return true;
 }
 
 Tensor<3>& readMnistImagesCsv(std::string file_path, Shape<2> shape, size_t number_of_entries) {
