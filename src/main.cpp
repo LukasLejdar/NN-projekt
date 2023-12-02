@@ -16,27 +16,26 @@
 
 int main() {
   MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
-  MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
 
   const size_t CONV_LENGTH = 1;
   Convolutional conv_layers[CONV_LENGTH] {
-    {{1,28,28}, {128,3,3}, {4,4}}, //input, kernel shape 
+    {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 2;
   Dense dense_layers[DENSE_LENGTH] = {
-    {6272, 128},
+    {5408, 128},
     {128, 10},
   };
 
   Model model(CONV_LENGTH, conv_layers, DENSE_LENGTH, dense_layers);
   Net net(model);
-  net.train_epochs(training_set, 30, test_set, 0.921);
-  net.test(test_set, const_cast<char*>("accuracy for test data: "));
+  net.train_epochs(training_set, 40, 0.921);
 
-  Tensor<3> test_images = readMnistImagesCsv("data/fashion_mnist_test_vectors.csv", {28,28}, 10000);
-  net.make_preds(test_images, "test_predictions.csv");
-  net.make_preds(training_set.images, "train_predictions.csv");
+  MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
+  net.test(test_set, const_cast<char*>("accuracy for test data: "));
+  net.make_preds(test_set.getAllImages(), "test_predictions.csv");
+  net.make_preds(training_set.getAllImages(), "train_predictions.csv");
 
   return 0;
 }

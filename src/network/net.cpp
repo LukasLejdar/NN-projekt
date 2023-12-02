@@ -186,9 +186,10 @@ void run_in_parallel(std::thread threads[], size_t n_threads, Function&& func, C
   }
 }
 
-void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& test_reader, float threashold) {
+void Net::train_epochs(MnistReader& training_reader, int epochs, float threashold) {
   std::thread threads[NTHREADS-1];
   training_reader.shuffle();
+  Tensor<3> randomizer = Tensor<3>(model.conv_layers->k[0]);
 
   size_t control_size = training_reader.number_of_entries / 5;
   size_t sample_size = training_reader.number_of_entries - control_size;
@@ -209,12 +210,10 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, MnistReader& te
     }, [](int t){ (void)t; });
 
     if(e == 8) learning_rate /= 2;
-    if(e < 10) continue;
 
     test(sample_readers[0], const_cast<char*>("smaple data accuracy: "));
     float accuracy = test(control_reader, const_cast<char*>("control data accuracy: "));
-    if(accuracy >= threashold) return;
-    test(test_reader, const_cast<char*>("test data accuracy: "));
+    if(accuracy >= threashold) break;
   }
 
   forward_prop(threadscache[0]);

@@ -11,7 +11,7 @@
 #include <mutex>
 #include <string>
 
-#define NAUGMENTATIONS 4
+#define NAUGMENTATIONS 6
 
 Tensor<3> &readMnistImagesCsv(std::string file_path, Shape<2> shape, size_t number_of_entries);
 TensorT<size_t, 1> &readMnistLablesCsv(std::string file_path, size_t number_of_entries);

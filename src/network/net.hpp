@@ -13,7 +13,7 @@
  
 class Net {
   public:
-    size_t mini_batch = 64;
+    size_t mini_batch = 128;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;
@@ -22,7 +22,7 @@ class Net {
     Net(Model& model);
 
     void copy_model_to_cache(Cache& cache);
-    void train_epochs(MnistReader& reader, int epochs, MnistReader& test_reader, float threashold);
+    void train_epochs(MnistReader& reader, int epochs, float threashold);
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
     float test(MnistReader& reader, char* message);
     void test_no_shinanegens(MnistReader& reader, Cache& cache);
