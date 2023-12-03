@@ -4,18 +4,6 @@
 #include <cassert>
 #include <string>
 
-Dense::Dense(const Dense& other): 
-  out_shape(other.out_shape),
-  in_shape(other.in_shape), 
-  w_shape(other.w_shape),
-  w(other.w),
-  maW(other.maW),
-  emaW(other.emaW),
-  b(other.b),
-  maB(other.maB),
-  emaB(other.emaB)
-{}
-
 Dense::Dense(size_t in, size_t out): 
   out_shape(out),
   in_shape(in), 
@@ -26,19 +14,6 @@ Dense::Dense(size_t in, size_t out):
   b(Vector(out_shape)),
   maB(Vector(out_shape)),
   emaB(Vector(out_shape))
-{}
-
-Convolutional::Convolutional(const Convolutional& other): 
-  k_shape(other.k_shape),
-  e_shape(other.e_shape),
-  in_shape(other.in_shape), 
-  pooling(other.pooling),
-  k(other.k),
-  maK(other.maK),
-  emaK(other.emaK),
-  b(other.b),
-  maB(other.maB),
-  emaB(other.emaB)
 {}
 
 Convolutional::Convolutional(Shape<3> in_shape, Shape<3> k_size, Shape<2> pooling):
@@ -109,10 +84,16 @@ void initialize_cache(Cache& cache, Model& model) {
     new (&cache.conv.dB[i]) Tensor<3>(model.conv_layers[i].e_shape);
     new (&cache.conv.k[i]) Tensor<4>(model.conv_layers[i].k_shape); 
     new (&cache.conv.dK[i]) Tensor<4>(model.conv_layers[i].k_shape);
-    new (&cache.conv.out[i]) Tensor<3>(model.conv_layers[i].out_shape);
-    new (&cache.conv.dOut[i]) Tensor<3>(model.conv_layers[i].out_shape);
     new (&cache.conv.pooling[i]) Shape<2>(model.conv_layers[i].pooling);
     new (&cache.conv.loc[i]) TensorT<size_t, 3>(model.conv_layers[i].out_shape);
+
+    if(!(model.conv_layers[i].pooling == Shape<2>(1,1))) {
+      new (&cache.conv.out[i]) Tensor<3>(model.conv_layers[i].out_shape);
+      new (&cache.conv.dOut[i]) Tensor<3>(model.conv_layers[i].out_shape);
+    } else {
+      cache.conv.out[i] = cache.conv.a[i].reference();
+      cache.conv.dOut[i] = cache.conv.dA[i].reference();
+    }
   }
 
   for(size_t i = 0; i < model.dense_count; i++) {

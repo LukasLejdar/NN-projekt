@@ -11,7 +11,6 @@ struct Dense {
   const Matrix w, maW, emaW; //moving averages
   const Vector b, maB, emaB; 
 
-  Dense(const Dense& other);
   Dense(size_t in, size_t out);
 
   void randomize() const;
@@ -25,8 +24,7 @@ struct Convolutional {
     const Tensor<4> k, maK, emaK;
     const Tensor<3> b, maB, emaB;
 
-    Convolutional(const Convolutional& other);
-    Convolutional(Shape<3> in_shape, Shape<3> ker_shape, Shape<2> pooling);
+    Convolutional(Shape<3> in_shape, Shape<3> ker_shape, Shape<2> pooling = {1,1});
 
     void randomize() const;
 };

@@ -199,6 +199,11 @@ struct TensorT<T, dim, std::enable_if_t<(dim > 1)>> {
     std::swap(other.is_subtensor, is_subtensor);
   }
 
+  TensorT& operator=(TensorT other) {
+    swap(other);
+    return *this;
+  }
+
   void set_is_subtensor(bool value) {
     is_subtensor = value;
   }
@@ -328,6 +333,11 @@ struct TensorT<T, dim, std::enable_if_t<dim == 1>> {
     shape.swap(other.shape);
     std::swap(other.v, v);
     std::swap(other.is_subtensor, is_subtensor);
+  }
+
+  TensorT& operator=(TensorT other) {
+    swap(other);
+    return *this;
   }
 
   void set_is_subtensor(bool value) {

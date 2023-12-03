@@ -263,10 +263,12 @@ void convolveATv(Tensor<4>& kernel, Tensor<3>& input, Tensor<3>& result) {
 }
 
 inline void maxPooling(Tensor<3>& A, Shape<2>& kernel, Tensor<3>& result, TensorT<size_t, 3>& max_locations) {
+  if(A.v == result.v) { return; }
+
   assert(A.shape[0] == result.shape[0]);
-  assert(result.shape == max_locations.shape);
   assert(result.ht  == std::ceil(A.ht / (float) kernel.ht));
   assert(result.wt  == std::ceil(A.wt / (float) kernel.wt));
+  assert(result.shape == max_locations.shape);
 
   zero(result);
 
@@ -297,7 +299,9 @@ inline void maxPooling(Tensor<3>& A, Shape<2>& kernel, Tensor<3>& result, Tensor
 }
 
 inline void maxPooling_backward(Tensor<3>& dAin, Tensor<3>& dAout, TensorT<size_t, 3>& max_locations) {
-  assert(dAin.shape[0] == dAout.shape[0]);
+  if(dAin.v == dAout.v) { return; }
+   assert(dAin.shape[0] == dAout.shape[0]);
+
   zero(dAout);
   for(size_t i = 0; i < dAin.size; i++) dAout.v[max_locations.v[i]] = dAin.v[i];
 }

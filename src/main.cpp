@@ -17,14 +17,16 @@
 int main() {
   MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
 
-  const size_t CONV_LENGTH = 1;
+  const size_t CONV_LENGTH = 3;
   Convolutional conv_layers[CONV_LENGTH] {
     {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape 
+    {{32,13,13}, {64,3,3}},
+    {{64,11,11}, {64,3,3}, {2,2}}
   };
 
   const size_t DENSE_LENGTH = 2;
   Dense dense_layers[DENSE_LENGTH] = {
-    {5408, 128},
+    {1600, 128},
     {128, 10},
   };
 

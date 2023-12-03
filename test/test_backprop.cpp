@@ -42,12 +42,12 @@ int main() {
   const size_t CONV_LENGTH = 2;
   Convolutional conv_layers[CONV_LENGTH] {
     {{1,28,28}, {4,3,3}, {3,3}}, //input, kernel shape 
-    {{4,9,9}, {8,3,3}, {2,2}}, //input, kernel shape 
+    {{4,9,9}, {8,3,3}, {1,1}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 1;
   Dense dense_layers[DENSE_LENGTH] = {
-    {128, 10},
+    {392, 10},
   };
 
   Model model(CONV_LENGTH, conv_layers, DENSE_LENGTH, dense_layers);
@@ -57,10 +57,10 @@ int main() {
   initialize_cache(cache, model);
   net.train(cache, training_set, 0, 0);
 
-  training_set.loop_to_beg();
-  training_set.read_next(false);
   zeroGradients(cache);
-  net.prepare_cache(training_set.last_read, training_set.last_lable, cache);
+  training_set.loop_to_beg();
+  training_set.read_next(false, cache.conv.out[-1], cache.y);
+  net.copy_model_to_cache(cache);
 
   float entropy = 0;
   while (entropy < 0.1) {

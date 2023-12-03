@@ -2,7 +2,7 @@ OPTIMIZATION_FLAGS=-O3 -march=native -ffast-math -DNDEBUG
 CFLAGS=-Wall -Wextra -pedantic -ggdb -mavx
 CC=g++
 
-all: _test _benchmark _net _test_backprop _paralelism _net_debug
+all: _test _benchmark _net _test_backprop _net_debug
 	mkdir -p build
 
 _test: ./test/test.cpp
