@@ -33,7 +33,7 @@ int main() {
   net.train_epochs(training_set, 40, 0.921);
 
   MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
-  net.test(test_set, const_cast<char*>("accuracy for test data: "));
+  net.test(test_set, const_cast<char*>("accuracy for test set: "));
   net.make_preds(test_set.getAllImages(), "test_predictions.csv");
   net.make_preds(training_set.getAllImages(), "train_predictions.csv");
 

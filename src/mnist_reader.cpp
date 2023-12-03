@@ -23,7 +23,7 @@ MnistReader::MnistReader(std::string images_path, std::string labels_path, Shape
   last_label(labels[0])
 {
   srand(time(NULL));
-  std::iota(permutation.v, permutation.v + permutation.size, 1);
+  std::iota(permutation.v, permutation.v + permutation.size, 0);
   loop_to_beg();
 }
 

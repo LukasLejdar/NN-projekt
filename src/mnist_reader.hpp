@@ -56,6 +56,7 @@ public:
   MnistReader(const MnistReader &reader, size_t from, size_t to);
   
   const Tensor<3> &getAllImages() { return images; };
+  const TensorT<size_t, 1> &getAllLabels() { return labels; };
   void loop_to_beg();
   void shuffle();
 

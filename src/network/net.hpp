@@ -24,9 +24,8 @@ class Net {
     void copy_model_to_cache(Cache& cache);
     void train_epochs(MnistReader& reader, int epochs, float threashold);
     void train(Cache& cache, MnistReader& reader, int epoch, int t_index);
-    float test(MnistReader& reader, char* message);
-    void test_no_shinanegens(MnistReader& reader, Cache& cache);
     void make_preds(const Tensor<3>& images, std::string preds_path);
+    float test(MnistReader& reader, char* message);
 
   private:
     std::mutex* conv_k_mtx, *conv_b_mtx;
