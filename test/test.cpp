@@ -616,6 +616,37 @@ int main(void) {
   training_set.read_next(false, augmented, y);
   drawMat(augmented);
 
+  //for(size_t i = 0; i < training_set.number_of_entries; i++) {
+  //  auto [mean, var] = getVarAndExp(training_set.getAllImages()[i]);
+  //  if(var > 0.1 && mean < 0.4) {
+  //    std::cout << "\n index " << i << " mean, var: " << mean << " " << var << "\n";
+  //    drawMat(training_set.getAllImages()[i]);
+  //  }
+  //}
+
+  std::cout << "\ntraining set absurdities\n";
+  std::cout << "\nindex: 26701 correct label: " << training_set.getAllLabels()[26701] << "\n";
+  drawMat(training_set.getAllImages()[26701]);
+  std::cout << "\nindex: 55126 correct label: " << training_set.getAllLabels()[55126] << "\n";
+  drawMat(training_set.getAllImages()[55126]);
+  std::cout << "\nindex: 22955 correct label: " << training_set.getAllLabels()[22955];
+  drawMat(training_set.getAllImages()[22955]);
+  std::cout << "\nindex: 12388 correct label: " << training_set.getAllLabels()[12388];
+  drawMat(training_set.getAllImages()[12388]);
+  std::cout << "\nindex: 24563 correct label: " << training_set.getAllLabels()[24563];
+  drawMat(training_set.getAllImages()[24563]);
+  std::cout << "\nindex: 16515 correct label: " << training_set.getAllLabels()[16515];
+  drawMat(training_set.getAllImages()[16515]);
+  std::cout << "\nindex: 45888 correct label: " << training_set.getAllLabels()[45888];
+  drawMat(training_set.getAllImages()[45888]);
+  std::cout << "\nindex: 16515 correct label: " << training_set.getAllLabels()[16515];
+  drawMat(training_set.getAllImages()[16515]);
+
+  MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
+  std::cout << "\ntest set absurdities\n";
+  std::cout << "\nindex: 55689 correct label: " << test_set.getAllLabels()[55689] << "\n";
+
+  drawMat(training_set.getAllImages()[55689]);
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
   testMatOperation(getTransposeTest2(), "transpose test 2");
