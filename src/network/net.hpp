@@ -7,13 +7,13 @@
 #include "layer.hpp"
 #include "../mnist_reader.hpp"
 
-#define NTHREADS 8
+#define NTHREADS 1
 #define PERIOD 1000
 #define AUGMENT true 
  
 class Net {
   public:
-    size_t mini_batch = 128;
+    size_t mini_batch = 2;
     float learning_rate = 0.001;
     float decay_rate1 = 0.9;
     float decay_rate2 = 0.99;

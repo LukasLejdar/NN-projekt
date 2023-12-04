@@ -11,6 +11,10 @@
 #include <mutex>
 #include <string>
 
+static const size_t NMONSTERS = 13;
+static const size_t monsters_ids[NMONSTERS] = {
+  26701, 55126, 12388, 16515, 16515, 59926, 56978, 56079, 55950, 54600, 52903, 52171, 52041};
+
 #define NAUGMENTATIONS 6
 
 Tensor<3> &readMnistImagesCsv(std::string file_path, Shape<2> shape, size_t number_of_entries);
@@ -65,7 +69,13 @@ public:
     if (index + 1 >= (int)number_of_entries) return false;
 
     index++;
-    last_label = labels.v[permutation[index]];
+    last_label = 0;
+    for(size_t i = 0; i < NMONSTERS; i++) {
+      if(permutation[index] == monsters_ids[i]) {
+        last_label = 1;
+        break;
+      }
+    }
     label = last_label;
 
     last_read.v = images.v + permutation[index]*images.ht*images.wt;

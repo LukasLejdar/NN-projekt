@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <bitset>
 #include <cstdio>
 #include <iostream>
@@ -16,25 +17,26 @@
 
 int main() {
   MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
+  MnistReader monstrous_set(training_set, 0, 120);
+  std::copy(monsters_ids, monsters_ids + NMONSTERS, monstrous_set.permutation.v);
 
   const size_t CONV_LENGTH = 1;
   Convolutional conv_layers[CONV_LENGTH] {
-    {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape 
+    {{1,28,28}, {4,3,3}, {2,2}}, //input, kernel shape 
   };
 
   const size_t DENSE_LENGTH = 2;
   Dense dense_layers[DENSE_LENGTH] = {
-    {5408, 128},
-    {128, 10},
+    {676, 128},
+    {128, 2},
   };
 
   Model model(CONV_LENGTH, conv_layers, DENSE_LENGTH, dense_layers);
   Net net(model);
-  net.train_epochs(training_set, 40, 0.921);
+  net.train_epochs(monstrous_set, 10, 1);
 
-  MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
-  net.test(test_set, const_cast<char*>("accuracy for test set: "));
-  net.make_preds(test_set.getAllImages(), "test_predictions.csv");
+  std::iota(training_set.permutation.v, training_set.permutation.v + training_set.permutation.size, 0);
+
   net.make_preds(training_set.getAllImages(), "train_predictions.csv");
 
   return 0;

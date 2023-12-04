@@ -212,8 +212,8 @@ void Net::train_epochs(MnistReader& training_reader, int epochs, float threashol
     if(e == 8) learning_rate /= 2;
 
     test(sample_readers[0], const_cast<char*>("smaple set accuracy: "));
-    float accuracy = test(control_reader, const_cast<char*>("control set accuracy: "));
-    if(accuracy >= threashold) break;
+    //float accuracy = test(control_reader, const_cast<char*>("control set accuracy: "));
+    //if(accuracy >= threashold) break;
   }
 
   forward_prop(threadscache[0]);
@@ -237,6 +237,7 @@ float Net::test(MnistReader& reader, char* message) {
   size_t out_shape = model.dense_layers[model.dense_count-1].out_shape.size;
   Tensor<2> total_results(out_shape, out_shape);
   TensorT<int, 1> total_labels_count(out_shape);
+  TensorT<size_t, 1> wrong_labeled(reader.number_of_entries);
 
   size_t threads_lot = reader.number_of_entries / (float) NTHREADS;
   MnistReader threads_readers[NTHREADS];
@@ -244,7 +245,7 @@ float Net::test(MnistReader& reader, char* message) {
     new(&threads_readers[t])  MnistReader(reader, t*threads_lot, (t+1)*threads_lot);
   }
 
-  run_in_parallel(threads, NTHREADS, [&threads_readers, this, &reader](int t) {
+  run_in_parallel(threads, NTHREADS, [&threads_readers, this, &reader, &wrong_labeled, &threads_lot](int t) {
       Cache& cache = threadscache[t];
 
       threads_readers[t].loop_to_beg();
@@ -254,6 +255,9 @@ float Net::test(MnistReader& reader, char* message) {
 
       while(threads_readers[t].read_next(false, cache.conv.out[-1], cache.y)) {
         int pred = predict(cache);
+        if (pred != (int) cache.y) { 
+          wrong_labeled[threads_lot*t + threads_readers[t].index] = 1; 
+        }
         cache.labels_count.v[cache.y]++;
         cache.results[cache.y][pred]++; 
       }
@@ -261,6 +265,15 @@ float Net::test(MnistReader& reader, char* message) {
       addTens(threadscache[t].results, total_results);
       addTens(threadscache[t].labels_count, total_labels_count);
   });
+
+  for(size_t i = 0; i < reader.number_of_entries; i++) {
+    if(wrong_labeled[i] == 1) {
+      size_t index = reader.permutation[i];
+      auto [mean, var] = getVarAndExp(reader.getAllImages()[index]);
+      std::cout << "\n index " << index << " correct label " << reader.getAllLabels()[index] << " mean, var: " << mean << " " << var << "\n";
+      drawMat(reader.getAllImages()[index]); 
+    }
+  }
 
   size_t total_correct = 0;
   for(size_t x = 0; x < out_shape; x++) {
@@ -304,6 +317,10 @@ void Net::make_preds(const Tensor<3>& images, std::string preds_path) {
     }
 
     for(size_t i = 0; i < preds.size; i++) {
+      if(preds.v[i] == 1) {
+        std::cout << "\n" << i << "\n";
+        drawMat(images[i]);
+      }
       preds_file << preds.v[i] << "\n";
     }
 
