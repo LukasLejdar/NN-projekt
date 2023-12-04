@@ -580,14 +580,14 @@ Matrix* getMaxpoolingTest2() {
 int main(void) {
   MnistReader training_set("data/fashion_mnist_train_vectors.csv", "data/fashion_mnist_train_labels.csv", {28,28}, 60000);
   MnistReader sub_reader = MnistReader(training_set, 20, 30);
-  draw3D(sub_reader.images);
+  draw3D(sub_reader.getAllImages());
   std::cout << "\nsame images expected\n\n";
-  draw3D(training_set.images, 20);
+  draw3D(training_set.getAllImages(), 20);
 
   Tensor<3> result(1,14,14), input(1,28,28);
   TensorT<size_t, 3> loc(1,14,14);
   Shape<2> kernel(2,2);
-  copyToTensorOfSameSize(sub_reader.images[5], input);
+  copyToTensorOfSameSize(sub_reader.getAllImages()[5], input);
 
   maxPooling(input, kernel, result, loc);
 
@@ -609,10 +609,12 @@ int main(void) {
   //std::cout << "\n";
   
   training_set.loop_to_beg();
-  drawMat(training_set.images[training_set.permutation[0]]);
+  drawMat(training_set.getAllImages()[training_set.permutation[0]]);
   std::cout << "\nAugmentation\n\n";
-  training_set.read_next(false);
-  drawMat(training_set.last_read);
+  Matrix augmented = training_set.getAllImages()[training_set.permutation[0]];
+  size_t y;
+  training_set.read_next(false, augmented, y);
+  drawMat(augmented);
 
   testMatOperation(getTransposeTest0(), "transpose test 0");
   testMatOperation(getTransposeTest1(), "transpose test 1");
