@@ -19,9 +19,6 @@ echo "     RUNNING     "
 echo "################"
 echo -en "\n"
 
-
-[ -w out ] && stdbuf -oL nice -n 19 ./build/net 2>&1 | tee out || ./build/net
-
 if { [ -e out ] && [ -w out ]; } || { touch out && [ -w out ]; }; then
     stdbuf -oL nice -n 19 ./build/net 2>&1 | tee out
 else
