@@ -11,9 +11,9 @@
 #include <mutex>
 #include <string>
 
-static const size_t NMONSTERS = 13;
+static const size_t NMONSTERS = 12;
 static const size_t monsters_ids[NMONSTERS] = {
-  26701, 55126, 12388, 16515, 16515, 59926, 56978, 56079, 55950, 54600, 52903, 52171, 52041};
+  26701, 55126, 12388, 16515, 59926, 56978, 56079, 55950, 54600, 52903, 52171, 52041};
 
 #define NAUGMENTATIONS 6
 

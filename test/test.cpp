@@ -624,14 +624,24 @@ int main(void) {
   //  }
   //}
 
-
+  Tensor<3> monsters(NMONSTERS, 28, 28);
 
   std::cout << "\ntraining set absurdities\n";
   for(size_t i = 0; i < NMONSTERS; i++) {
-
     std::cout << "\nindex: " << monsters_ids[i] << " correct label: " << training_set.getAllLabels()[monsters_ids[i]] << "\n";
     drawMat(training_set.getAllImages()[monsters_ids[i]]);
   }
+
+
+  for(size_t i = 0; i < NMONSTERS; i++) {
+    copyToTensorOfSameSize(training_set.getAllImages()[monsters_ids[i]], monsters[i]);
+  }
+
+  std::cout << "\n\n\n\n";
+  draw3D(monsters.reference(0,6));
+  std::cout << "\n\n\n\n";
+  draw3D(monsters.reference(6, monsters.shape[0]));
+  std::cout << "\n\n\n\n";
 
   MnistReader test_set("data/fashion_mnist_test_vectors.csv", "data/fashion_mnist_test_labels.csv", {28,28}, 10000);
   std::cout << "\ntest set absurdities\n";
