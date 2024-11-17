@@ -1,5 +1,5 @@
 548309 Lukáš Lejdar
-## PV021 project -- Deep Learning from Scratch
+## Deep Learning from Scratch
 
 ### DEADLINE
 Sunday 4. 12. 2023 23:59 (December 4th)
@@ -143,7 +143,4 @@ are four data files included:
 
 Best luck with the project!
 
-Tomáš Foltýnek
-foltynek@fi.muni.cz
-PV021 Neural Networks
 
