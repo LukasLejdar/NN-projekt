@@ -19,7 +19,7 @@ int main() {
 
   const size_t CONV_LENGTH = 1;
   Convolutional conv_layers[CONV_LENGTH] {
-    {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape 
+    {{1,28,28}, {32,3,3}, {2,2}}, //input, kernel shape, pooling window
   };
 
   const size_t DENSE_LENGTH = 2;
